@@ -1,0 +1,13 @@
+node_modules
+.nyc_output
+coverage
+test
+*.test.js
+.git
+.gitignore
+README.md
+benchmark
+examples
+output
+schemas
+run_simulation.js

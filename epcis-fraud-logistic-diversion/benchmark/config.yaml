@@ -1,0 +1,56 @@
+test:
+  name: epcis-logistic-diversion-benchmark
+  description: >
+    Benchmark for EPCIS 2.0 logistics diversion smart contract.
+    Submits ObjectEvent, AggregationEvent, and TransactionEvent events
+    from the ARCOS DEA dataset with injected anomalies.
+    Measures TPS and latency per event type and rule.
+
+  workers:
+    number: 1
+
+  rounds:
+    - label: submitObjectEvent
+      description: Submit ObjectEvent (commissioning / shipping / receiving)
+      txNumber: 88
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 50
+      workload:
+        module: workload/submitEvent.js
+        arguments:
+          contractId: logistic-diversion
+          channelName: mychannel
+          eventType: ObjectEvent
+          eventsFile: /epcis-output/events_sample.json
+
+    - label: submitAggregationEvent
+      description: Submit AggregationEvent (packing ADD / unpacking DELETE)
+      txNumber: 6
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 20
+      workload:
+        module: workload/submitEvent.js
+        arguments:
+          contractId: logistic-diversion
+          channelName: mychannel
+          eventType: AggregationEvent
+          eventsFile: /epcis-output/events_sample.json
+
+    - label: submitTransactionEvent
+      description: Submit TransactionEvent (desadv / recadv)
+      txNumber: 6
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 20
+      workload:
+        module: workload/submitEvent.js
+        arguments:
+          contractId: logistic-diversion
+          channelName: mychannel
+          eventType: TransactionEvent
+          eventsFile: /epcis-output/events_sample.json

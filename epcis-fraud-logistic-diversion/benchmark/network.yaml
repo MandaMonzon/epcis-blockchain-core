@@ -1,0 +1,31 @@
+name: epcis-fabric-network
+version: "2.0.0"
+
+caliper:
+  blockchain: fabric
+
+info:
+  Version: 2.5.0
+  Size: 2 orgs, 1 peer each
+  Orderer: Solo
+  Distribution: Single Host
+  StateDB: GoLevelDB
+
+channels:
+  - channelName: mychannel
+    contracts:
+      - id: logistic-diversion
+        version: "1.0"
+
+organizations:
+  - mspid: Org1MSP
+    identities:
+      certificates:
+        - name: User1
+          clientPrivateKey:
+            path: /blockchain-research/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/e8be3997971e06383820e69544e7093af0988bc199e4c2e9b9b369eafc6d12ec_sk
+          clientSignedCert:
+            path: /blockchain-research/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/cert.pem
+    connectionProfile:
+      path: /blockchain-research/epcis-blockchain-core/epcis-fraud-logistic-diversion/benchmark/connection-org1-docker.yaml
+      discover: true

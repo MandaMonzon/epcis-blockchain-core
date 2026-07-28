@@ -1,0 +1,4 @@
+FROM hyperledger/caliper:0.6.0
+USER root
+RUN npx caliper bind --caliper-bind-sut fabric:2.5
+USER node

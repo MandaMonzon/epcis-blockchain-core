@@ -1,6 +1,3 @@
 node_modules/
 benchmark/results-*.json
-# Generated at runtime from local Fabric network — not portable
-connection-org1-docker.yaml
-network.yaml.bak
 

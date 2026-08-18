@@ -1,19 +1,9 @@
 {
   "name": "epcis-fraud-logistic-diversion",
   "version": "1.0.0",
-  "description": "Logistic Diversion detection chaincode \u2014 GS1 EPCIS 2.0 / Hyperledger Fabric",
+  "description": "Logistic Diversion detection chaincode — GS1 EPCIS 2.0 / Hyperledger Fabric",
   "main": "chaincode/index.js",
-  "scripts": {
-    "test": "mocha test/**/*.test.js --timeout 10000",
-    "start": "node chaincode/index.js --peer.address $CORE_PEER_ADDRESS"
-  },
-  "dependencies": {
-    "fabric-contract-api": "^2.5.0",
-    "fabric-shim": "^2.5.0"
-  },
-  "devDependencies": {
-    "chai": "^4.3.7",
-    "mocha": "^10.2.0",
-    "sinon": "^17.0.1"
-  }
+  "scripts": { "test": "mocha test/**/*.test.js --timeout 10000" },
+  "dependencies": { "fabric-contract-api": "^2.5.0", "fabric-shim": "^2.5.0" },
+  "devDependencies": { "chai": "^4.3.7", "mocha": "^10.2.0", "sinon": "^17.0.1" }
 }

@@ -43,6 +43,7 @@ docker run --rm \
   --add-host=host.docker.internal:host-gateway \
   -v "$PROJECT_ROOT:/blockchain-research" \
   -v "$(dirname "$FABRIC_NET"):/blockchain-research/fabric-samples" \
+  -v "$EPCIS_DATA_DIR:/epcis-output" \
   -v "$SCRIPT_DIR:/caliper-workspace" \
   -w /caliper-workspace \
   "$CALIPER_IMAGE" \

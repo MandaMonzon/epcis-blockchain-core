@@ -115,6 +115,7 @@ echo "▶ Running Caliper benchmark..."
 docker run --rm \
   --add-host=host.docker.internal:host-gateway \
   -v "$PROJECT_ROOT:/blockchain-research" \
+  -v "$FABRIC_NET:$FABRIC_NET" \
   -v "$SCRIPT_DIR:/caliper-workspace" \
   -w /caliper-workspace \
   "$CALIPER_IMAGE" \

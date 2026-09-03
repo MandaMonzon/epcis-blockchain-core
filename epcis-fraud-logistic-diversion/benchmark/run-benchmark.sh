@@ -31,6 +31,14 @@ fi
 
 echo "▶ Executando o benchmark Caliper..."
 
+# Resolve o link simbólico "current" pro diretório real
+EPCIS_DATA_DIR="${EPCIS_DATA_DIR:-$(readlink -f "$PROJECT_ROOT/epcis-arcos-etl-generator/data/epcis/current")}"
+if [ -z "$EPCIS_DATA_DIR" ] || [ ! -d "$EPCIS_DATA_DIR" ]; then
+  echo "✗ Dados EPCIS não encontrados. Gere primeiro com o pipeline em epcis-arcos-etl-generator."
+  exit 1
+fi
+echo "✓ EPCIS data: $EPCIS_DATA_DIR"
+
 docker run --rm \
   --add-host=host.docker.internal:host-gateway \
   -v "$PROJECT_ROOT:/blockchain-research" \

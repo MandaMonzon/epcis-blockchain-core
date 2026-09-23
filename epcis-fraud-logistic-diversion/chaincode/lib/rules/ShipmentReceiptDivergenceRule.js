@@ -47,9 +47,13 @@
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { SHIPMENT_DIVERGENCE }       = require('../../constants/RiskScoreConfig');
+const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
 
 const SHIP_DIV_KEY      = 'ship_div_';
-const TRANSIT_DAYS_MAX  = 30; // days: after this window, missing recadv is suspicious
+// Was hardcoded at 30, no source (see Relatorio_Fontes_Blockchain.docx:
+// "não existe prazo de 30 dias na lei"). Centralized so it can be re-run
+// at other values (3/5/7 days) for a sensitivity comparison.
+const TRANSIT_DAYS_MAX  = RuleThresholdsConfig.SHIPMENT_TRANSIT_DAYS_MAX;
 
 class ShipmentReceiptDivergenceRule extends TaxonomyRule {
     constructor() {
@@ -110,6 +114,51 @@ class ShipmentReceiptDivergenceRule extends TaxonomyRule {
         }
 
         return RuleResult.pass();
+    }
+
+    /**
+     * auditPendingShipments — PROACTIVE scan for lots that have a desadv
+     * (shipped=true) but no recadv (received=false) past TRANSIT_DAYS_MAX,
+     * regardless of whether any NEW event arrives for that lot afterwards.
+     *
+     * WHY THIS WAS NEEDED (bug found 22/09):
+     * The per-event check above (inside evaluate()) only fires
+     * SHIPMENT_DIVERGENCE reactively, piggy-backed on a *subsequent*
+     * ObjectEvent for the same lot. If no further event is ever submitted
+     * for that lot (e.g. the chain of custody simply stops after shipping),
+     * the divergence is NEVER flagged — a silent miss, not a "hard to
+     * detect" anomaly. Analysis of experiment_results.xlsx showed detection
+     * rates as low as 3.1% for 'Shipment Without Receipt Confirmation' on
+     * some medications, which traced back to exactly this gap.
+     *
+     * FIX: this method actively scans all ship_div_* keys (called from
+     * getAuditSummary / a dedicated 'auditPendingShipments' contract
+     * function) so missing recadv is caught even with no follow-up event —
+     * matching the existing Caliper 'getAuditSummary' benchmark round.
+     */
+    static async auditPendingShipments(ctx, asOfDate) {
+        const now = new Date(asOfDate || Date.now());
+        const pending = [];
+
+        const iterator = await ctx.stub.getStateByRange(
+            SHIP_DIV_KEY, SHIP_DIV_KEY + '\xFF'
+        );
+        for await (const { key, value } of iterator) {
+            const state = JSON.parse(value.toString());
+            if (!state.shipped || state.received) continue;
+
+            const shipTime = new Date(state.shipTime);
+            const daysDiff = (now - shipTime) / (1000 * 60 * 60 * 24);
+            if (daysDiff > TRANSIT_DAYS_MAX) {
+                pending.push({
+                    txnId: key.slice(SHIP_DIV_KEY.length),
+                    shipTime: state.shipTime,
+                    destination: state.destination,
+                    daysSinceShipment: Math.round(daysDiff),
+                });
+            }
+        }
+        return pending;
     }
 
     /**

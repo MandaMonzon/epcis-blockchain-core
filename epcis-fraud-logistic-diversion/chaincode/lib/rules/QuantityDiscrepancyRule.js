@@ -38,9 +38,12 @@
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { QUANTITY_DISCREPANCY }      = require('../../constants/RiskScoreConfig');
+const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
 
 const QTY_KEY_PREFIX  = 'qty_add_';
-const TOLERANCE       = 0.10; // 10% loss allowed before flagging
+// Was hardcoded at 0.10 (10%), no source. Now centralized in
+// RuleThresholdsConfig.js — see that file for the sourced value (1%).
+const TOLERANCE       = RuleThresholdsConfig.QUANTITY_DISCREPANCY_TOLERANCE_PCT;
 
 class QuantityDiscrepancyRule extends TaxonomyRule {
     constructor() {

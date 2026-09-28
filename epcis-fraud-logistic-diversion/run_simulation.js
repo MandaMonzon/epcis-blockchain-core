@@ -39,6 +39,46 @@ function makeLedgerStub() {
         },
         putState:    async (key, value) => { store.set(key, value.toString()); },
         deleteState: async (key) => { store.delete(key); },
+        createCompositeKey: (objectType, attributes) => {
+
+            const SEP = String.fromCharCode(0);
+
+            return SEP + objectType + attributes.map(a => SEP + a).join('') + SEP;
+
+        },
+
+        getStateByPartialCompositeKey: async (objectType, attributes) => {
+
+            const SEP = String.fromCharCode(0);
+
+            const prefix = SEP + objectType + attributes.map(a => SEP + a).join('') + SEP;
+
+            const keys = Array.from(store.keys()).filter(k => k.startsWith(prefix)).sort();
+
+            let idx = 0;
+
+            return {
+
+                async next() {
+
+                    if (idx < keys.length) {
+
+                        const k = keys[idx++];
+
+                        return { value: { key: k, value: Buffer.from(store.get(k)) }, done: false };
+
+                    }
+
+                    return { value: undefined, done: true };
+
+                },
+
+                async close() {}
+
+            };
+
+        },
+
         getStateByRange: async (start, end) => {
             const results = [];
             for (const [k, v] of store.entries()) {

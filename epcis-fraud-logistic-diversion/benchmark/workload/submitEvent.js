@@ -26,22 +26,31 @@
  *
  * Per-round score capture
  * ------------------------
- * The chaincode's submitEvent returns { accepted, riskScore, eventID, epc, ... }.
+ * The chaincode's submitEvent returns { accepted, riskScore, eventID, epc,
+ * bizStep, violations: [{rule, code, message, score}], ... }.
  * Caliper itself only records TPS/success-fail, so this module additionally
  * appends one JSON line per transaction to
  *   benchmark/output/round_scores/r{roundIndex}_{eventType}_w{workerIndex}.jsonl
- * containing {roundIndex, eventType, eventID, epc, riskScore, txSuccess, ts}.
+ * containing {roundIndex, eventType, eventID, epc, riskScore, triggeredRules,
+ * txSuccess, ts}.
  * txSuccess is the Caliper-level commit outcome (per-drug SLA cutoff
  * analysis); riskScore is the chaincode's own business score (per-drug
- * score-evolution analysis). This is a streaming append (fs.createWriteStream
- * in append mode), not an in-memory buffer, so it adds negligible memory
- * overhead regardless of run size — safe for node003's 16GB ceiling.
+ * score-evolution analysis); triggeredRules exposes WHICH Class B rule(s)
+ * fired and their individual score contribution — added 2026-09-24 to close
+ * the "rule attribution" gap identified during the 23/09 anomaly-detection
+ * analysis (needed to distinguish "rule never fires for this anomaly type"
+ * vs "rule fires but doesn't discriminate" vs "scenario generator didn't
+ * perturb the fields the rule reads").
+ * This is a streaming append (fs.createWriteStream in append mode), not an
+ * in-memory buffer, so it adds negligible memory overhead regardless of run
+ * size — safe for node003's 16GB ceiling.
  * `analysis/merge_round_scores.py` later joins these files with
  * scenario_template.csv (same run, via run_manifest.json) to build the
  * round x drug x event-type x score/SLA table.
  * If the SDK doesn't expose the chaincode result for a given connector
- * version, riskScore is recorded as null — this never affects or blocks the
- * underlying benchmark transaction itself (best-effort, wrapped in try/catch).
+ * version, riskScore/triggeredRules are recorded as null/[] — this never
+ * affects or blocks the underlying benchmark transaction itself (best-effort,
+ * wrapped in try/catch).
  */
 
 'use strict';
@@ -67,7 +76,25 @@ function extractChaincodeResult(txStatus) {
             raw = txStatus.result;
         }
         if (raw === undefined || raw === null) return null;
-        const str = Buffer.isBuffer(raw) ? raw.toString('utf8') : String(raw);
+        // BUGFIX (2026-09-23): fabric-gateway's Commit.getResult() /
+        // Proposal.evaluate() return a plain Uint8Array, NOT a Node Buffer.
+        // Buffer.isBuffer(raw) is FALSE for a plain Uint8Array, so this used
+        // to fall through to String(raw), which on a Uint8Array joins the
+        // raw byte values with commas (e.g. "123,34,114,...") instead of
+        // UTF-8 decoding them. JSON.parse() on that garbage string always
+        // threw, and this function silently swallowed the error and
+        // returned null -- which is why every riskScore in round_scores/*
+        // was captured as null even though the chaincode was returning it
+        // correctly. Buffer.from() correctly handles Buffer, Uint8Array,
+        // and plain arrays of byte values alike.
+        let str;
+        if (raw instanceof Uint8Array) {
+            str = Buffer.from(raw).toString('utf8');
+        } else if (typeof raw === 'string') {
+            str = raw;
+        } else {
+            str = String(raw);
+        }
         if (!str) return null;
         return JSON.parse(str);
     } catch (_err) {
@@ -186,24 +213,30 @@ class SubmitEventWorkload extends WorkloadModuleBase {
 
     /**
      * Best-effort append of {roundIndex, eventType, eventID, epc, riskScore,
-     * txSuccess} to this worker's JSONL file. Never throws — a failure here
-     * must not fail the underlying benchmark transaction (see docstring).
+     * triggeredRules, txSuccess, ts} to this worker's JSONL file. Never
+     * throws — a failure here must not fail the underlying benchmark
+     * transaction (see docstring).
      * txSuccess is the Caliper-level commit outcome (used for the per-drug
      * SLA cutoff analysis); riskScore is the chaincode's own business score
-     * (used for the per-drug score-evolution analysis) — two different axes
-     * requested separately, both captured in the same line.
+     * (used for the per-drug score-evolution analysis); triggeredRules is the
+     * list of Class B rules that fired for this event, each with its own
+     * score contribution — closes the "rule attribution" gap (2026-09-24).
      */
     _recordScore(event, results, txSuccess) {
         if (!this.scoreStream) return;
         try {
             const txStatus = Array.isArray(results) ? results[0] : results;
             const chaincodeResult = txStatus ? extractChaincodeResult(txStatus) : null;
+            const triggeredRules = chaincodeResult
+                ? (chaincodeResult.violations || []).map(v => ({ rule: v.rule, code: v.code, score: v.score }))
+                : [];
             const line = JSON.stringify({
                 roundIndex: this.roundIndex,
                 eventType:  this.eventType,
                 eventID:    event.eventID || null,
                 epc:        Array.isArray(event.epcList) ? (event.epcList[0] || null) : null,
                 riskScore:  chaincodeResult ? (chaincodeResult.riskScore ?? null) : null,
+                triggeredRules,
                 txSuccess,
                 ts:         Date.now(),
             });

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Gera config.yaml com txNumber real, baseado na contagem de eventos do events.json do experimento atual.
+# Uso: ./generate-config.sh <caminho para events.json>
+set -e
+EVENTS_JSON="$1"
+BENCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ ! -f "$EVENTS_JSON" ]; then
+  echo "Erro: events.json nao encontrado em $EVENTS_JSON"
+  exit 1
+fi
+
+read OBJ AGG TXN <<< "$(python3 -c "
+import json
+with open('$EVENTS_JSON') as f:
+    data = json.load(f)
+events = data['epcisBody']['eventList']
+counts = {'ObjectEvent': 0, 'AggregationEvent': 0, 'TransactionEvent': 0}
+for e in events:
+    t = e.get('type')
+    if t in counts:
+        counts[t] += 1
+print(max(counts['ObjectEvent'], 1), max(counts['AggregationEvent'], 1), max(counts['TransactionEvent'], 1))
+")"
+
+echo "Contagem real de eventos -> ObjectEvent=$OBJ AggregationEvent=$AGG TransactionEvent=$TXN"
+
+sed -e "s/__OBJ_TX__/$OBJ/" -e "s/__AGG_TX__/$AGG/" -e "s/__TXN_TX__/$TXN/" \
+    "$BENCH_DIR/config.template.yaml" > "$BENCH_DIR/config.yaml"
+
+echo "config.yaml atualizado com txNumber real."

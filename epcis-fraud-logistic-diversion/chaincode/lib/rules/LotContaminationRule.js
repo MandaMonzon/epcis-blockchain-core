@@ -44,6 +44,7 @@
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { LOT_CONTAMINATION }         = require('../../constants/RiskScoreConfig');
+const { extractLotId }              = require('../util/LotIdentifier');
 
 const LOT_RISK_KEY = 'lot_risk_';
 
@@ -56,7 +57,7 @@ class LotContaminationRule extends TaxonomyRule {
     }
 
     async evaluate(ctx, event) {
-        const txnId = extractTransactionId(event);
+        const txnId = extractLotId(event);
         if (!txnId) return RuleResult.pass();
 
         const key        = LOT_RISK_KEY + txnId;
@@ -81,7 +82,7 @@ class LotContaminationRule extends TaxonomyRule {
     static async updateLotRiskState(ctx, event, violations) {
         if (!violations || violations.length === 0) return;
 
-        const txnId = extractTransactionId(event);
+        const txnId = extractLotId(event);
         if (!txnId) return;
 
         const key        = LOT_RISK_KEY + txnId;
@@ -99,11 +100,6 @@ class LotContaminationRule extends TaxonomyRule {
 
         await ctx.stub.putState(key, Buffer.from(JSON.stringify(state)));
     }
-}
-
-function extractTransactionId(event) {
-    const ilmd = event.ilmd || {};
-    return (ilmd['cbvmda:transactionID'] || ilmd['cbvmda:lotNumber'] || '').trim() || null;
 }
 
 module.exports = LotContaminationRule;

@@ -48,6 +48,7 @@ const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { SHIPMENT_DIVERGENCE }       = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
+const { extractLotId }              = require('../util/LotIdentifier');
 
 const SHIP_DIV_KEY      = 'ship_div_';
 // Was hardcoded at 30, no source (see Relatorio_Fontes_Blockchain.docx:
@@ -64,7 +65,7 @@ class ShipmentReceiptDivergenceRule extends TaxonomyRule {
     }
 
     async evaluate(ctx, event) {
-        const txnId = extractTxnId(event);
+        const txnId = extractLotId(event);
         if (!txnId) return RuleResult.pass();
 
         // ── TransactionEvent handling ─────────────────────────────────────────
@@ -166,7 +167,7 @@ class ShipmentReceiptDivergenceRule extends TaxonomyRule {
      * Called by RuleEngine after Class B evaluation.
      */
     static async updateShipmentState(ctx, event) {
-        const txnId = extractTxnId(event);
+        const txnId = extractLotId(event);
         if (!txnId) return;
 
         if (event.type !== 'TransactionEvent') return;
@@ -189,11 +190,6 @@ class ShipmentReceiptDivergenceRule extends TaxonomyRule {
 
         await ctx.stub.putState(key, Buffer.from(JSON.stringify(state)));
     }
-}
-
-function extractTxnId(event) {
-    const ilmd = event.ilmd || {};
-    return (ilmd['cbvmda:transactionID'] || ilmd['cbvmda:lotNumber'] || '').trim() || null;
 }
 
 function extractBizTransType(event) {

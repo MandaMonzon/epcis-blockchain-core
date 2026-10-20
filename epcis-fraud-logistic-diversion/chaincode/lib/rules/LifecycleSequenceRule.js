@@ -1,3 +1,4 @@
+
 'use strict';
  
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
@@ -6,17 +7,15 @@ const { ErrorCode }                = require('../../constants/EpcisConstants');
 
 const { SKIPPED_STEP_SCORE }       = require('../../constants/RuleThresholdsConfig');
  
-const LIFECYCLE   = ['commissioning', 'packing', 'shipping', 'receiving'];
+const REQUIRED_BEFORE_RECEIVING = ['commissioning', 'packing', 'shipping'];
 
-const KEY_PREFIX  = 'lifecycle_';
-
-const NOT_STARTED = -1;
+const KEY_PREFIX                = 'lifecycle_';
  
-async function lastStepIndex(ctx, epc) {
+async function stepsSeen(ctx, epc) {
 
     const bytes = await ctx.stub.getState(KEY_PREFIX + epc);
 
-    return bytes && bytes.length ? JSON.parse(bytes.toString()).step : NOT_STARTED;
+    return bytes && bytes.length ? JSON.parse(bytes.toString()).seen : [];
 
 }
  
@@ -24,27 +23,27 @@ class LifecycleSequenceRule extends TaxonomyRule {
 
     constructor() {
 
-        super('LifecycleSequenceRule', 'Detects an EPC that skips a lifecycle step (e.g. packed without commissioning)');
+        super('LifecycleSequenceRule', 'Detects an EPC received without having gone through every earlier lifecycle step');
 
     }
  
     async evaluate(ctx, event) {
 
-        const step = LIFECYCLE.indexOf(event.bizStep);
-
-        if (event.type !== 'ObjectEvent' || step < 0) return RuleResult.pass();
+        if (event.type !== 'ObjectEvent' || event.bizStep !== 'receiving') return RuleResult.pass();
 
         for (const epc of (event.epcList || [])) {
 
-            const prev = await lastStepIndex(ctx, epc);
+            const seen    = await stepsSeen(ctx, epc);
 
-            if (step !== 0 && step !== prev + 1) {
+            const missing = REQUIRED_BEFORE_RECEIVING.filter(step => !seen.includes(step));
+
+            if (missing.length > 0) {
 
                 return RuleResult.fail(ErrorCode.SKIPPED_LIFECYCLE_STEP,
 
-                    `EPC ${epc}: '${event.bizStep}' not preceded by '${LIFECYCLE[step - 1]}'`,
+                    `EPC ${epc} received without prior step(s): ${missing.join(', ')}`,
 
-                    SKIPPED_STEP_SCORE, { epc });
+                    SKIPPED_STEP_SCORE, { epc, missing });
 
             }
 
@@ -56,13 +55,17 @@ class LifecycleSequenceRule extends TaxonomyRule {
  
     static async updateLifecycleState(ctx, event) {
 
-        const step = LIFECYCLE.indexOf(event.bizStep);
-
-        if (event.type !== 'ObjectEvent' || step < 0) return;
+        if (event.type !== 'ObjectEvent' || !event.bizStep) return;
 
         for (const epc of (event.epcList || [])) {
 
-            await ctx.stub.putState(KEY_PREFIX + epc, Buffer.from(JSON.stringify({ step })));
+            const seen = await stepsSeen(ctx, epc);
+
+            if (seen.includes(event.bizStep)) continue;
+
+            seen.push(event.bizStep);
+
+            await ctx.stub.putState(KEY_PREFIX + epc, Buffer.from(JSON.stringify({ seen })));
 
         }
 

@@ -112,6 +112,7 @@ async function main() {
         process.exit(1);
     }
 
+    if (process.env.SORT) events.sort((a, b) => new Date(a.eventTime) - new Date(b.eventTime));
     const stub    = makeLedgerStub();
     const ctx     = { stub };
     const results = [];

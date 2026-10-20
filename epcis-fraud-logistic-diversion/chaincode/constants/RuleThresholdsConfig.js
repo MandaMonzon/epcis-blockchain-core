@@ -47,6 +47,7 @@ const RuleThresholdsConfig = Object.freeze({
     // configurable here specifically so it can be re-run at 3/5/7/30 days
     // for a sensitivity comparison instead of being buried in the rule file.
     SHIPMENT_TRANSIT_DAYS_MAX: 30,
+    MIN_TRANSIT_DAYS: 3,
 
     // ── B7 — VolumeFragmentationRule ────────────────────────────────────────
     VOLUME_FRAGMENTATION_WINDOW_DAYS: 30,

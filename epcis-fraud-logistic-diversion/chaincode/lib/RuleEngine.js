@@ -27,6 +27,7 @@ const LotContaminationRule           = require('./rules/LotContaminationRule');
 const QuantityDiscrepancyRule        = require('./rules/QuantityDiscrepancyRule');
 const ShipmentReceiptDivergenceRule  = require('./rules/ShipmentReceiptDivergenceRule');
 const TransitDiversionRule           = require('./rules/TransitDiversionRule');
+const TransitTimeRule = require('./rules/TransitTimeRule');
 
 // Class A — any failure immediately rejects the event
 const CLASS_A_RULES = [
@@ -47,6 +48,7 @@ const CLASS_B_RULES = [
     new QuantityDiscrepancyRule(),        // AggregationEvent: packed ≠ arrived count
     new ShipmentReceiptDivergenceRule(),  // TransactionEvent: desadv without recadv
     new TransitDiversionRule(),           // receiving location ≠ declared destination
+    new TransitTimeRule(),
     new LotContaminationRule(),           // must run last — reads lot state set by other rules
 ];
 

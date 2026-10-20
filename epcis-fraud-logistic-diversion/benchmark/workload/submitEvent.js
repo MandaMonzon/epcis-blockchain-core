@@ -153,12 +153,12 @@ class SubmitEventWorkload extends WorkloadModuleBase {
         }
 
         // Shuffle for realistic submission order
-        this.events.sort(() => Math.random() - 0.5);
+        this.events.sort((a, b) => new Date(a.eventTime) - new Date(b.eventTime));
 
         // Each worker gets its own slice to avoid duplicate submissions
         const sliceSize  = Math.ceil(this.events.length / totalWorkers);
         const start      = workerIndex * sliceSize;
-        this.events      = this.events.slice(start, start + sliceSize);
+        this.events = this.events.filter((_, i) => i % totalWorkers === workerIndex);
         this.index       = 0;
 
         // One append-only file per (round, eventType, worker) — streamed, not

@@ -67,9 +67,23 @@ read OBJ AGG TXN <<< "$COUNTS_OUTPUT"
  
 echo "Contagem real de eventos -> ObjectEvent=$OBJ AggregationEvent=$AGG TransactionEvent=$TXN"
  
-sed -e "s/__OBJ_TX__/$OBJ/" -e "s/__AGG_TX__/$AGG/" -e "s/__TXN_TX__/$TXN/" \
+sed -e "s/__OBJ_TX__/$OBJ/" -e "s/__AGG_TX__/$AGG/" -e "s/__TXN_TX__/$TXN/" "$BENCH_DIR/config.template.yaml" > "$BENCH_DIR/config.yaml"
+ 
+if grep -q "__OBJ_TX__\|__AGG_TX__\|__TXN_TX__" "$BENCH_DIR/config.yaml" 2>/dev/null; then
 
-    "$BENCH_DIR/config.template.yaml" > "$BENCH_DIR/config.yaml"
+  echo "Erro: config.yaml ainda tem placeholders nao substituidos - algo falhou no sed"
+
+  exit 1
+
+fi
+
+if [ ! -s "$BENCH_DIR/config.yaml" ]; then
+
+  echo "Erro: config.yaml ficou vazio"
+
+  exit 1
+
+fi
  
 echo "config.yaml atualizado com txNumber real."
 

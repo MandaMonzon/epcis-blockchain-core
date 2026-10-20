@@ -13,7 +13,7 @@ test:
   rounds:
     - label: submitObjectEvent
       description: Submit ObjectEvent (commissioning / shipping / receiving)
-      txNumber: 1
+      txNumber: 216149
       rateControl:
         type: fixed-rate
         opts:
@@ -28,7 +28,7 @@ test:
 
     - label: submitAggregationEvent
       description: Submit AggregationEvent (packing ADD / unpacking DELETE)
-      txNumber: 1
+      txNumber: 17500
       rateControl:
         type: fixed-rate
         opts:
@@ -43,7 +43,7 @@ test:
 
     - label: submitTransactionEvent
       description: Submit TransactionEvent (desadv / recadv)
-      txNumber: 1
+      txNumber: 17500
       rateControl:
         type: fixed-rate
         opts:

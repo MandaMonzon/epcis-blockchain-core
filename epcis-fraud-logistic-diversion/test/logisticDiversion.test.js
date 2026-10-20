@@ -275,7 +275,7 @@ describe('VolumeFragmentationRule — Class B', () => {
  
 describe('RuleEngine — score clamping', () => {
 
-    it('clamps combined score to 100 maximum', async () => {
+    it('uses the highest violation score (max strategy)', async () => {
 
         const ctx      = makeCtx();
 
@@ -315,7 +315,7 @@ describe('RuleEngine — score clamping', () => {
 
         expect(result.violations.length).to.be.greaterThanOrEqual(2);
 
-        expect(result.riskScore).to.equal(100);
+        expect(result.riskScore).to.equal(85);
 
     });
 

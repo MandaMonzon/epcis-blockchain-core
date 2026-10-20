@@ -75,7 +75,7 @@ class RuleEngine {
         for (const rule of CLASS_B_RULES) {
             const result = await rule.evaluate(ctx, event);
             if (!result.passed) {
-                totalScore += result.score;
+                totalScore = Math.max(totalScore, result.score);
                 const violation = {
                     rule:    rule.name,
                     code:    result.errorCode,

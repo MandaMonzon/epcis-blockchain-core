@@ -80,7 +80,8 @@ class LotContaminationRule extends TaxonomyRule {
      * Marks the lot as contaminated so future events inherit the risk.
      */
     static async updateLotRiskState(ctx, event, violations) {
-        if (!violations || violations.length === 0) return;
+        violations = (violations || []).filter(v => v.code !== ErrorCode.LOT_CONTAMINATION && (v.score || 0) >= 70);
+        if (violations.length === 0) return;
 
         const txnId = extractLotId(event);
         if (!txnId) return;

@@ -160,13 +160,13 @@
                     </tr>
 
                     <tr>
-                         <td>submitObjectEvent</td> <td>33721</td> <td>1771</td> <td>50.0</td> <td>0.50</td> <td>0.04</td> <td>0.11</td> <td>50.0</td>
+                         <td>submitObjectEvent</td> <td>214540</td> <td>1609</td> <td>50.0</td> <td>2.06</td> <td>0.04</td> <td>0.16</td> <td>50.0</td>
                     </tr>
                     <tr>
-                         <td>submitAggregationEvent</td> <td>2426</td> <td>74</td> <td>20.0</td> <td>0.56</td> <td>0.06</td> <td>0.21</td> <td>19.9</td>
+                         <td>submitAggregationEvent</td> <td>17362</td> <td>138</td> <td>20.0</td> <td>2.07</td> <td>0.05</td> <td>0.32</td> <td>20.0</td>
                     </tr>
                     <tr>
-                         <td>submitTransactionEvent</td> <td>2415</td> <td>85</td> <td>20.0</td> <td>2.10</td> <td>0.06</td> <td>0.28</td> <td>19.7</td>
+                         <td>submitTransactionEvent</td> <td>17371</td> <td>129</td> <td>20.0</td> <td>2.15</td> <td>0.06</td> <td>0.35</td> <td>20.0</td>
                     </tr>
                 </table>
             </div>
@@ -184,7 +184,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>submitObjectEvent</td> <td>33721</td> <td>1771</td> <td>50.0</td> <td>0.50</td> <td>0.04</td> <td>0.11</td> <td>50.0</td>
+                                     <td>submitObjectEvent</td> <td>214540</td> <td>1609</td> <td>50.0</td> <td>2.06</td> <td>0.04</td> <td>0.16</td> <td>50.0</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for submitObjectEvent</h3>
@@ -204,7 +204,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>submitAggregationEvent</td> <td>2426</td> <td>74</td> <td>20.0</td> <td>0.56</td> <td>0.06</td> <td>0.21</td> <td>19.9</td>
+                                     <td>submitAggregationEvent</td> <td>17362</td> <td>138</td> <td>20.0</td> <td>2.07</td> <td>0.05</td> <td>0.32</td> <td>20.0</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for submitAggregationEvent</h3>
@@ -224,7 +224,7 @@
                                      <th>Name</th> <th>Succ</th> <th>Fail</th> <th>Send Rate (TPS)</th> <th>Max Latency (s)</th> <th>Min Latency (s)</th> <th>Avg Latency (s)</th> <th>Throughput (TPS)</th>
                                 </tr>
                                 <tr>
-                                     <td>submitTransactionEvent</td> <td>2415</td> <td>85</td> <td>20.0</td> <td>2.10</td> <td>0.06</td> <td>0.28</td> <td>19.7</td>
+                                     <td>submitTransactionEvent</td> <td>17371</td> <td>129</td> <td>20.0</td> <td>2.15</td> <td>0.06</td> <td>0.35</td> <td>20.0</td>
                                 </tr>
                             </table>
                         <h3>Resource utilization for submitTransactionEvent</h3>
@@ -244,7 +244,7 @@ workers:
 rounds:
   - label: submitObjectEvent
     description: Submit ObjectEvent (commissioning &#x2F; shipping &#x2F; receiving)
-    txNumber: 35492
+    txNumber: 216149
     rateControl:
       type: fixed-rate
       opts:
@@ -258,7 +258,7 @@ rounds:
         eventsFile: &#x2F;epcis-output&#x2F;events.json
   - label: submitAggregationEvent
     description: Submit AggregationEvent (packing ADD &#x2F; unpacking DELETE)
-    txNumber: 2500
+    txNumber: 17500
     rateControl:
       type: fixed-rate
       opts:
@@ -272,7 +272,7 @@ rounds:
         eventsFile: &#x2F;epcis-output&#x2F;events.json
   - label: submitTransactionEvent
     description: Submit TransactionEvent (desadv &#x2F; recadv)
-    txNumber: 2500
+    txNumber: 17500
     rateControl:
       type: fixed-rate
       opts:

@@ -63,7 +63,7 @@ class LogisticsDiversionRule extends TaxonomyRule {
  
             const allowedNext = AUTHORIZED_TRANSITIONS[prev.lastBizStep];
 
-            if (allowedNext !== undefined && !allowedNext.includes(event.bizStep)) {
+            if (allowedNext !== undefined && prev.lastBizStep !== event.bizStep && !allowedNext.includes(event.bizStep)) {
 
                 return RuleResult.fail(
 

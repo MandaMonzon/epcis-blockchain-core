@@ -65,7 +65,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
             if (!srcId) continue;
 
             const records = await HistoryStore.queryAll(ctx, OBJECT_TYPE, [event.bizLocation, srcId]);
-            const recent  = records.filter(r => r.timestamp >= cutoff);
+            const recent  = records.filter(r => r.timestamp >= cutoff && r.timestamp <= eventTime);
             const count   = recent.length + 1; // +1 for the current event
 
             for (const { min, score, label } of THRESHOLDS) {

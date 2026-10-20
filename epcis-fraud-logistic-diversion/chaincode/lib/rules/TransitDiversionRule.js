@@ -68,7 +68,7 @@ class TransitDiversionRule extends TaxonomyRule {
                     const saved = JSON.parse(stateBytes.toString());
                     if (!saved.intendedDest) continue;
 
-                    if (actualLocation && saved.intendedDest !== actualLocation) {
+                    if (actualLocation && normLoc(saved.intendedDest) !== normLoc(actualLocation)) {
                         return RuleResult.fail(
                             ErrorCode.TRANSIT_DIVERSION,
                             `EPC ${epc}: intended destination '${saved.intendedDest}' ` +
@@ -92,7 +92,7 @@ class TransitDiversionRule extends TaxonomyRule {
                 const saved = JSON.parse(stateBytes.toString());
                 if (!saved.intendedDest) continue;
 
-                if (actualLocation && saved.intendedDest !== actualLocation) {
+                if (actualLocation && normLoc(saved.intendedDest) !== normLoc(actualLocation)) {
                     return RuleResult.fail(
                         ErrorCode.TRANSIT_DIVERSION,
                         `Container unpacked at wrong location — EPC ${epc} was destined for ` +
@@ -131,6 +131,14 @@ class TransitDiversionRule extends TaxonomyRule {
     }
 }
 
+function normLoc(id) {
+
+    const m = String(id || '').match(/us\.dea\.[A-Z0-9]+/);
+
+    return m ? m[0] : String(id || '');
+
+}
+ 
 function extractIntendedDest(event) {
     const dest = event.destinationList || [];
     const loc  = dest.find(d => d.type === 'location');

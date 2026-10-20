@@ -28,6 +28,7 @@ const QuantityDiscrepancyRule        = require('./rules/QuantityDiscrepancyRule'
 const ShipmentReceiptDivergenceRule  = require('./rules/ShipmentReceiptDivergenceRule');
 const TransitDiversionRule           = require('./rules/TransitDiversionRule');
 const TransitTimeRule = require('./rules/TransitTimeRule');
+const LifecycleSequenceRule = require('./rules/LifecycleSequenceRule');
 
 // Class A — any failure immediately rejects the event
 const CLASS_A_RULES = [
@@ -49,6 +50,7 @@ const CLASS_B_RULES = [
     new ShipmentReceiptDivergenceRule(),  // TransactionEvent: desadv without recadv
     new TransitDiversionRule(),           // receiving location ≠ declared destination
     new TransitTimeRule(),
+    new LifecycleSequenceRule(),
     new LotContaminationRule(),           // must run last — reads lot state set by other rules
 ];
 
@@ -98,6 +100,7 @@ class RuleEngine {
         await QuantityDiscrepancyRule.updateQuantityState(ctx, event);
         await ShipmentReceiptDivergenceRule.updateShipmentState(ctx, event);
         await TransitDiversionRule.updateTransitState(ctx, event);
+        await LifecycleSequenceRule.updateLifecycleState(ctx, event);
         await LotContaminationRule.updateLotRiskState(ctx, event, violations);
 
         // Score is clamped to [0, 100]

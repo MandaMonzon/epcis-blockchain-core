@@ -48,6 +48,7 @@ const RuleThresholdsConfig = Object.freeze({
     // for a sensitivity comparison instead of being buried in the rule file.
     SHIPMENT_TRANSIT_DAYS_MAX: 30,
     MIN_TRANSIT_DAYS: 3,
+    SKIPPED_STEP_SCORE: 75,
 
     // ── B7 — VolumeFragmentationRule ────────────────────────────────────────
     VOLUME_FRAGMENTATION_WINDOW_DAYS: 30,

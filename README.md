@@ -114,3 +114,12 @@ epcis-blockchain-core/
 - FDA 21 CFR §7.41 — https://www.law.cornell.edu/cfr/text/21/7.41
 - DSCSA — https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title21-section360eee
 - EU FMD — https://eur-lex.europa.eu/eli/reg_del/2016/161/2021-10-11/eng
+ 
+## Como verificar se as regras funcionam
+ 
+ 
+cd epcis-fraud-logistic-diversion && ./verificar_regras.sh
+ 
+ 
+Mostra, em português, quais tipos de anomalia o contrato detecta (OK) e quais ainda não (FALHA). Transações limpas não devem ser marcadas. Requer apenas Node instalado.
+

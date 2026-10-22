@@ -48,9 +48,11 @@ echo; echo "== 1/5 Testes unitarios das regras =="
 (cd "$CC" && npx mocha test/anomalyDetection.test.js) | tee "$OUT/testes.txt" | tail -8
 
 DATA="$GEN/output"
+RAW="$(ls "$GEN/data/arcos_raw.gz" "$GEN/data/raw/arcos_raw.gz" 2>/dev/null | head -1)"
 if [ "$GERAR" = 1 ] || [ ! -f "$DATA/events.json" ]; then
   echo; echo "== 2/5 Gerando dataset a partir do ARCOS =="
-  (cd "$GEN" && python3 main.py --data data/arcos_raw.gz --max-lines 1000000 --sample-per-drug 10 \
+  [ -n "$RAW" ] || { echo "erro: arcos_raw.gz nao encontrado em $GEN/data"; exit 1; }
+  (cd "$GEN" && python3 main.py --data "$RAW" --max-lines 1000000 --sample-per-drug 10 \
     --balanced --max-units-per-lot 10 --max-mem-mb 8000 2>&1 | tail -3)
 else
   echo; echo "== 2/5 Usando dataset existente em $DATA (use --gerar para regenerar) =="

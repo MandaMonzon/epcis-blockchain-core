@@ -12,7 +12,7 @@ echo "== Rede Fabric (containers):"
 docker ps --format '   {{.Names}}  {{.Status}}' 2>&1 | grep -E "peer|orderer|logistic" | head -10 || true
 [ -z "$(docker ps -q 2>/dev/null)" ] && echo "   (nenhum container no ar)"
 echo "== Dados:"
-ls -d "$WS"/epcis-arcos-etl-generator/output/events.json "$WS"/epcis-arcos-etl-generator/data/arcos_raw.gz 2>&1 | sed 's/^/   /'
+ls -d "$WS"/epcis-arcos-etl-generator/output/events.json "$WS"/epcis-arcos-etl-generator/data/raw/arcos_raw.gz 2>&1 | sed 's/^/   /'
 echo "== Resultados anteriores:"
 ls -t "$WS"/resultados 2>/dev/null | head -5 | sed 's/^/   /'
 echo "== Pastas na raiz do workspace:"

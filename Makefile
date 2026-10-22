@@ -1,10 +1,11 @@
-.PHONY: help test evaluate all network map diagnose clean clean-yes
+.PHONY: audit help test evaluate all network map diagnose clean clean-yes
 
 help:
 	@echo "make test       unit tests for the rules"
 	@echo "make evaluate   tests + evaluation on the existing dataset + REPORT.md"
 	@echo "make all        regenerate the dataset from ARCOS and evaluate (full reproduction)"
 	@echo "make network    all + Caliper load test on the Fabric network"
+	@echo "make audit     ARCOS data quality audit"
 	@echo "make map        which rules fire for each anomaly type"
 	@echo "make diagnose   machine state (git, docker, versions)"
 	@echo "make clean      list temporary files (deletes nothing); make clean-yes deletes them"
@@ -32,3 +33,6 @@ clean:
 
 clean-yes:
 	scripts/pipeline.sh --clean --yes
+
+audit:
+	python3 analysis_scripts/audit_arcos.py $${ARCOS_CSV:-../epcis-arcos-etl-generator/output/arcos_clean.csv}

@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
+# (use via Makefile: make avaliar | tudo | rede | limpar)
 # Reproduz toda a avaliacao: testes -> dataset -> avaliacao (completo, subset, prevalencia 1%) -> RELATORIO.md
 # Uso:
-#   ./reproduzir.sh                 testes + avaliacao (usa o dataset ja gerado, se existir)
-#   ./reproduzir.sh --gerar         regenera o dataset a partir do ARCOS antes de avaliar
-#   ./reproduzir.sh --rede          alem disso, roda o teste de carga Caliper na rede Fabric
-#   ./reproduzir.sh --limpar        lista arquivos temporarios/antigos (nao apaga)
-#   ./reproduzir.sh --limpar --sim  apaga o que foi listado
+#   scripts/pipeline.sh                 testes + avaliacao (usa o dataset ja gerado, se existir)
+#   scripts/pipeline.sh --gerar         regenera o dataset a partir do ARCOS antes de avaliar
+#   scripts/pipeline.sh --rede          alem disso, roda o teste de carga Caliper na rede Fabric
+#   scripts/pipeline.sh --limpar        lista arquivos temporarios/antigos (nao apaga)
+#   scripts/pipeline.sh --limpar --sim  apaga o que foi listado
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WS="$(cd "$ROOT/.." && pwd)"
 GEN="$WS/epcis-arcos-etl-generator"
 CC="$ROOT/epcis-fraud-logistic-diversion"
@@ -94,7 +95,7 @@ json.dump({
     'semente da amostragem de prevalencia': 42,
     'node': sh('node', '--version'), 'python': platform.python_version(),
     'comando do generator': 'python3 main.py --data data/arcos_raw.gz --max-lines 1000000 --sample-per-drug 10 --balanced --max-units-per-lot 10',
-    'reproduzir': './reproduzir.sh --gerar',
+    'reproduzir': 'make tudo',
 }, open(meta, 'w'), indent=2, ensure_ascii=False)
 PY
 python3 "$AN/gerar_relatorio.py" "$OUT/RELATORIO.md" "$META" \

@@ -70,6 +70,15 @@ def main():
     for i, par in enumerate(pares):
         rot, path = par.split('=', 1)
         out += secao(f'{i + 3}. {rot}', json.load(open(path)))
+    out += ['## Pontos levantados na revisao (Fausto) e como sao tratados aqui', '',
+            '- **Repositorio x resultados**: cada relatorio registra commit do core, commit do '
+            'generator, SHA-256 dos eventos, semente e versoes; `make tudo` refaz tudo do zero.',
+            '- **Quase todos os medicamentos marcados**: reportamos taxa por tipo e a taxa de '
+            'falsos positivos nos controles negativos (`none`, `recalled`), com IC95%, em vez de '
+            'uma taxa agregada.',
+            '- **Falsos positivos**: medidos de forma isolada por transacao, tambem em uma '
+            'amostra com prevalencia ~1% de anomalias (regime mais proximo do real).',
+            '- Esta avaliacao nao substitui validacao com dados reais rotulados.', '']
     out += ['## Limitacoes', '',
             '- Os dados sao **sinteticos**: anomalias injetadas por um gerador a partir de transacoes '
             'reais do ARCOS (DEA). As regras e o gerador foram ajustados em conjunto, portanto '

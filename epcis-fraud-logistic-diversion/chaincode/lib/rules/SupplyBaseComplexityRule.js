@@ -95,7 +95,7 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
 
         if (!Array.isArray(event.sourceList) || event.sourceList.length === 0)    return RuleResult.pass();
  
-        const suppliers = await HistoryStore.queryAll(ctx, OBJECT_TYPE, [event.bizLocation]);
+        const suppliers = await HistoryStore.queryAll(ctx, OBJECT_TYPE, [locationId(event)]);
 
         const supplierSet = new Set(suppliers.map(s => s.supplierId));
 
@@ -117,7 +117,7 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
 
                     ErrorCode.SUPPLY_BASE_COMPLEXITY,
 
-                    `${label}: buyer '${event.bizLocation}' has ${count} distinct suppliers ` +
+                    `${label}: buyer '${locationId(event)}' has ${count} distinct suppliers ` +
 
                     `(threshold: ${min}). Skilton et al. (2024): +1 supplier ≈ +290,000 MME/year diversion risk.`,
 
@@ -145,7 +145,7 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
 
             if (!id) continue;
 
-            await HistoryStore.append(ctx, OBJECT_TYPE, [event.bizLocation, id], {
+            await HistoryStore.append(ctx, OBJECT_TYPE, [locationId(event), id], {
 
                 supplierId:  id,
 
@@ -159,6 +159,11 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
 
 }
  
+function locationId(event) {
+    const loc = event.bizLocation;
+    return String((loc && loc.id) || loc || '');
+}
+
 function extractSupplierId(src) {
 
     return String(src.source || src.value || src.type || '').trim();

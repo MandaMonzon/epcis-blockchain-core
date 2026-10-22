@@ -38,13 +38,12 @@ const CLASS_A_RULES = [
 // Class B — scores accumulate; event is still recorded but flagged
 const CLASS_B_RULES = [
     new LogisticsDiversionRule(),
-    // TODO: discuss with Fausto whether SupplyBaseComplexityRule belongs here.
     // Skilton et al. (2024) derived the ≥9 suppliers threshold from domestic US
     // ARCOS data. Our scenario is EU→US logistics diversion — the buyer's supplier
     // count reflects legitimate domestic purchasing patterns, not cross-border
     // transit anomalies. Keeping this rule may inflate false positives without
     // adding scientific validity to the logistics diversion detection.
-    // new SupplyBaseComplexityRule(),
+    new SupplyBaseComplexityRule(),
     new VolumeFragmentationRule(),
     new QuantityDiscrepancyRule(),        // AggregationEvent: packed ≠ arrived count
     new ShipmentReceiptDivergenceRule(),  // TransactionEvent: desadv without recadv

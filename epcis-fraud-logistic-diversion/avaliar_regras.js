@@ -4,6 +4,7 @@
 const fs = require('fs'), path = require('path');
 const RuleEngine = require('./chaincode/lib/RuleEngine');
 const { makeCtx } = require('./test/helpers');
+const Shipment = require('./chaincode/lib/rules/ShipmentReceiptDivergenceRule');
 const THRESHOLD = 70, NEGATIVES = new Set(['none', 'recalled']);
 const dir = process.argv[2];
 function splitCsv(line) {
@@ -24,9 +25,14 @@ for (const e of events) {
   const stats = {};
   for (const [tx, evs] of byTx) {
     const ctx = makeCtx(); let max = 0;
-    for (const e of evs.sort((a, b) => new Date(a.eventTime) - new Date(b.eventTime))) {
+    evs.sort((a, b) => new Date(a.eventTime) - new Date(b.eventTime));
+    for (const e of evs) {
       max = Math.max(max, (await RuleEngine.evaluate(ctx, e)).riskScore || 0);
     }
+    // auditoria periodica: despacho sem recebimento 31 dias depois do ultimo evento
+    const last = new Date(evs[evs.length - 1].eventTime).getTime();
+    const pending = await Shipment.auditPendingShipments(ctx, new Date(last + 31 * 86400000));
+    if (pending.length > 0) max = Math.max(max, 70);
     const s = stats[labels.get(tx)] || (stats[labels.get(tx)] = { n: 0, flagged: 0 });
     s.n++; if (max >= THRESHOLD) s.flagged++;
   }

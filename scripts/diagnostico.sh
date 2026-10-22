@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Mostra o estado do ambiente (para conferir se a maquina esta limpa e funcional).
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WS="$(cd "$ROOT/.." && pwd)"
 echo "== Maquina: $(hostname) | $(date '+%Y-%m-%d %H:%M')"

@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
-# (use via Makefile: make avaliar | tudo | rede | limpar)
-# Reproduz toda a avaliacao: testes -> dataset -> avaliacao (completo, subset, prevalencia 1%) -> RELATORIO.md
-# Uso:
-#   scripts/pipeline.sh                 testes + avaliacao (usa o dataset ja gerado, se existir)
-#   scripts/pipeline.sh --gerar         regenera o dataset a partir do ARCOS antes de avaliar
-#   scripts/pipeline.sh --rede          alem disso, roda o teste de carga Caliper na rede Fabric
-#   scripts/pipeline.sh --limpar        lista arquivos temporarios/antigos (nao apaga)
-#   scripts/pipeline.sh --limpar --sim  apaga o que foi listado
+# Pipeline completo de avaliacao. Uso: make avaliar | tudo | rede | limpar
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -189,6 +189,21 @@ describe('SupplyBaseComplexityRule — Class B', () => {
 
     });
  
+    it('does not count the receiving location as a supplier', async () => {
+        const event = makeEvent({
+            bizStep:     'receiving',
+            bizLocation: 'urn:epc:id:sgln:us.dea.PHARM002.0.0',
+            sourceList:  [
+                { type: 'location', source: 'urn:epc:id:sgln:4000000.99999.0' },
+                { type: 'possessing_party', source: 'urn:epc:id:pgln:4000000.99999' },
+                { type: 'owning_party', source: 'urn:epc:id:pgln:4000000.99999' },
+                { type: 'location', source: 'urn:epc:id:sgln:4000001.00000.0' },
+            ],
+        });
+        const result = await RuleEngine.evaluate(ctx, event);
+        expect(result.violations.filter(v => v.code === 'SUPPLY_BASE_COMPLEXITY')).to.be.empty;
+    });
+
     it.skip('flags a buyer with 9+ suppliers (critical — 99th percentile) — PENDING DISCUSSION WITH FAUSTO', async () => {
 
         const location = 'urn:epc:id:sgln:us.dea.PHARM999.0.0';

@@ -60,7 +60,7 @@ US buyer (real ARCOS/DEA transactions).
 - **Then** `SHIPMENT_DIVERGENCE` (70) fires
 
 ### 10. Many suppliers (`many_suppliers`)
-- **Given** a buyer receiving from 9 or more distinct distributors (99th percentile, Skilton et al. 2024)
+- **Given** a buyer location whose `receiving`, `stocking` or `dispensing` events list 9 or more distinct parties in `sourceList` entries of type `possessing_party` or `owning_party` (accumulated over the events of that location; `location` entries are not parties) (99th percentile, Skilton et al. 2024)
 - **When** the receiving is processed
 - **Then** `SUPPLY_BASE_COMPLEXITY` (85) fires. Bands: 4-5 suppliers = 30, 6-8 = 60, 9 or more = 85
 

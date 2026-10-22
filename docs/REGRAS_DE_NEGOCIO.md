@@ -60,7 +60,7 @@ um comprador dos EUA (dados reais de transações do ARCOS/DEA).
 - **Então** `SHIPMENT_DIVERGENCE` (70) dispara
 
 ### 10. Muitos fornecedores (`many_suppliers`)
-- **Dado** um comprador que recebe de 9 ou mais distribuidores distintos (percentil 99, Skilton et al. 2024)
+- **Dado** um local comprador cujos eventos `receiving`, `stocking` ou `dispensing` listam 9 ou mais partes distintas em entradas de `sourceList` do tipo `possessing_party` ou `owning_party` (acumuladas nos eventos desse local; entradas `location` não são partes) (percentil 99, Skilton et al. 2024)
 - **Quando** o recebimento é processado
 - **Então** `SUPPLY_BASE_COMPLEXITY` (85) dispara. Faixas: 4–5 fornecedores = 30, 6–8 = 60, 9 ou mais = 85
 

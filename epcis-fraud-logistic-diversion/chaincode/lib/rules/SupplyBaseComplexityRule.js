@@ -164,10 +164,11 @@ function locationId(event) {
     return String((loc && loc.id) || loc || '');
 }
 
+const PARTY_TYPES = new Set(['possessing_party', 'owning_party']);
+
 function extractSupplierId(src) {
-
-    return String(src.source || src.value || src.type || '').trim();
-
+    if (!PARTY_TYPES.has(src.type)) return '';
+    return String(src.source || src.value || '').trim();
 }
  
 module.exports = SupplyBaseComplexityRule;

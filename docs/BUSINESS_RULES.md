@@ -73,7 +73,7 @@ US buyer (real ARCOS/DEA transactions).
 
 | # | Finding | Impact |
 |---|---|---|
-| 1 | `OUT_OF_ORDER` (30) never decides; `out_of_order` and `item_location_mismatch` are caught by `SKIPPED_LIFECYCLE_STEP` | Generator labels do not map to dedicated rules |
+| 1 | DECIDED: no new rules. `out_of_order` already has its own code (`LOGISTICS_DIVERSION_TIMING`, score 30, tested) but it is masked by the sequence check when both fail, and the offline replay sorts events by time, so it can never appear there. `item_location_mismatch` is a unit with `receiving` and no prior `shipping`, which is exactly what `SKIPPED_LIFECYCLE_STEP` (75) detects. A new rule would duplicate it and need a score threshold with no source | Detected via `SKIPPED_LIFECYCLE_STEP`; labels are documented, not separate rules. Real ledger order (arrival order) is not reproduced by the offline replay |
 | 2 | RESOLVED. `LOGISTICS_DIVERSION_SEQUENCE` fired on ~50% of normal transactions because the generator placed shipping before packing when commissioning and shipping fell on the same day (fixed: shipping is at least 3h after commissioning). `VOLUME_FRAGMENTATION` fired on ~84% because it counted one receiving event per unit; it now counts distinct orders (lot). Normal transactions now trigger no rule | Fragmentation needs cross-transaction history, so isolated replay never exercises it; it is covered by unit tests |
 | 3 | Quantity tolerance of 10% and the 30-day window have no source; literature suggests 0.5-1% | Calibration, pending a decision |
 | 4 | Synthetic data and ~70% prevalence | Metrics measure generator/rule consistency, not real performance |

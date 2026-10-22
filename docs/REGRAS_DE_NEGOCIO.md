@@ -73,7 +73,7 @@ um comprador dos EUA (dados reais de transações do ARCOS/DEA).
 
 | # | Achado | Impacto |
 |---|---|---|
-| 1 | `OUT_OF_ORDER` (30) nunca decide; `out_of_order` e `item_location_mismatch` são detectados por `SKIPPED_LIFECYCLE_STEP` | Os rótulos do gerador não correspondem a regras dedicadas |
+| 1 | DECIDIDO: sem regras novas. `out_of_order` já tem código próprio (`LOGISTICS_DIVERSION_TIMING`, score 30, testado), mas fica mascarado pela checagem de sequência quando as duas falham, e o replay offline ordena eventos por tempo, então ele nunca aparece ali. `item_location_mismatch` é uma unidade com `receiving` sem `shipping` anterior, exatamente o que `SKIPPED_LIFECYCLE_STEP` (75) detecta. Uma regra nova duplicaria essa e exigiria um limiar sem fonte | Detectados via `SKIPPED_LIFECYCLE_STEP`; os rótulos estão documentados, não são regras separadas. A ordem real de chegada no ledger não é reproduzida pelo replay offline |
 | 2 | RESOLVIDO. `LOGISTICS_DIVERSION_SEQUENCE` disparava em ~50% das transações normais porque o gerador colocava o shipping antes do packing quando commissioning e shipping caíam no mesmo dia (corrigido: shipping fica pelo menos 3h após o commissioning). `VOLUME_FRAGMENTATION` disparava em ~84% porque contava um evento de recebimento por unidade; agora conta pedidos (lotes) distintos. Transações normais não disparam nenhuma regra | A fragmentação precisa de histórico entre transações, então o replay isolado nunca a exercita; ela é coberta por testes unitários |
 | 3 | Tolerância de quantidade 10% e prazo de 30 dias não têm fonte; literatura indica 0,5–1% | Calibração, pendente de decisão |
 | 4 | Dados sintéticos e prevalência ~70% | A métrica mede consistência entre gerador e regras, não desempenho real |

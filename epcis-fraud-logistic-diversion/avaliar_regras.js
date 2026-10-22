@@ -52,4 +52,8 @@ for (const e of events) {
   for (const [k, n] of Object.entries(causes).sort((a, b) => b[1] - a[1])) console.log(`  ${n}x ${k}`);
   const pct = (a, b) => b ? (100 * a / b).toFixed(1) + '%' : 'n/a';
   console.log(`\nPrecisao: ${pct(tp, tp + fp)} | Recall: ${pct(tp, tp + fn)} | Falsos positivos: ${fp} de ${fp + tn} sem anomalia (${pct(fp, fp + tn)})\n`);
+  const ji = process.argv.indexOf('--json');
+  if (ji > 0) fs.writeFileSync(process.argv[ji + 1], JSON.stringify({
+    dataset: path.basename(dir), threshold: THRESHOLD, stats, causes, tp, fn, fp, tn,
+  }, null, 2));
 })();

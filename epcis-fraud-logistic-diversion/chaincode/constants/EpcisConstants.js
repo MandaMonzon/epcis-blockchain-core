@@ -91,7 +91,7 @@ const AUTHORIZED_TRANSITIONS = {
 
 };
  
-const CROSS_JURISDICTION_STEPS = new Set([BizStep.SHIPPING]);
+const CROSS_JURISDICTION_STEPS = new Set([BizStep.SHIPPING, BizStep.RECEIVING]);
  
 const ErrorCode = {
 

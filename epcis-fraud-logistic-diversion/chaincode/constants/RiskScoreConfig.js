@@ -54,7 +54,7 @@ const RiskScoreConfig = {
     // Cross-jurisdiction transfer at a bizStep that doesn't authorize it.
     // DSCSA: product outside authorized distribution channel = "suspect product".
     // Equivalent to FDA Class II.
-    CROSS_JURISDICTION: 60,
+    CROSS_JURISDICTION: 75,
 
     // Event timestamp earlier than the previous recorded event for the same product.
     // Likely a data integrity issue; may not indicate physical diversion.

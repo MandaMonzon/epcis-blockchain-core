@@ -69,6 +69,29 @@ class MockStub {
 
     }
  
+    async getStateByRange(start, end) {
+ 
+        const matches = [...this._state.entries()]
+ 
+            .filter(([k]) => k >= start && k < end)
+ 
+            .map(([key, value]) => ({ key, value: Buffer.from(value) }));
+ 
+        return {
+ 
+            [Symbol.asyncIterator]() {
+ 
+                let i = 0;
+ 
+                return { next: async () => (i < matches.length ? { done: false, value: matches[i++] } : { done: true, value: undefined }) };
+ 
+            },
+ 
+        };
+ 
+    }
+
+ 
     reset() { this._state.clear(); }
 
 }

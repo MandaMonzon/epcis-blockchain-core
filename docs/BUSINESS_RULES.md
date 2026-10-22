@@ -74,6 +74,6 @@ US buyer (real ARCOS/DEA transactions).
 | # | Finding | Impact |
 |---|---|---|
 | 1 | `OUT_OF_ORDER` (30) never decides; `out_of_order` and `item_location_mismatch` are caught by `SKIPPED_LIFECYCLE_STEP` | Generator labels do not map to dedicated rules |
-| 2 | On the old dataset, `LOGISTICS_DIVERSION_SEQUENCE` (60) fired on ~51% of normal transactions, but that dataset had repeated ids. To confirm on the new dataset with `make map` | May only be the already fixed data bug |
+| 2 | RESOLVED. `LOGISTICS_DIVERSION_SEQUENCE` fired on ~50% of normal transactions because the generator placed shipping before packing when commissioning and shipping fell on the same day (fixed: shipping is at least 3h after commissioning). `VOLUME_FRAGMENTATION` fired on ~84% because it counted one receiving event per unit; it now counts distinct orders (lot). Normal transactions now trigger no rule | Fragmentation needs cross-transaction history, so isolated replay never exercises it; it is covered by unit tests |
 | 3 | Quantity tolerance of 10% and the 30-day window have no source; literature suggests 0.5-1% | Calibration, pending a decision |
 | 4 | Synthetic data and ~70% prevalence | Metrics measure generator/rule consistency, not real performance |

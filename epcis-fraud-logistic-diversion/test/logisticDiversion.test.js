@@ -273,6 +273,29 @@ describe('VolumeFragmentationRule — Class B', () => {
 
 });
  
+describe('VolumeFragmentationRule — order counting', () => {
+    it('counts the units of one lot as a single order', async () => {
+        const ctx      = makeCtx();
+        const location = 'urn:epc:id:sgln:us.dea.PHARM_LOT.0.0';
+        const srcId    = 'urn:epc:id:pgln:us.dea.DIST_LOT';
+        const base     = new Date('2024-06-01T10:00:00Z').getTime();
+        for (let i = 0; i < 25; i++) {
+            await HistoryStore.append(ctx, 'fragmentation', [location, srcId, `unit-${i}`], {
+                timestamp: base + i * 60_000,
+                orderId:   'LOT-1',
+            });
+        }
+        const result = await RuleEngine.evaluate(ctx, makeEvent({
+            bizStep:     'receiving',
+            bizLocation: location,
+            sourceList:  [{ type: 'owning_party', source: srcId }],
+            eventTime:   new Date(base + 30 * 60_000).toISOString(),
+            ilmd:        { 'cbvmda:lotNumber': 'LOT-1' },
+        }));
+        expect(result.violations.find(v => v.code === 'VOLUME_FRAGMENTATION')).to.not.exist;
+    });
+});
+
 describe('RuleEngine — score clamping', () => {
 
     it('uses the highest violation score (max strategy)', async () => {

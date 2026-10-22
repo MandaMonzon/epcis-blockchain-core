@@ -66,7 +66,9 @@ class VolumeFragmentationRule extends TaxonomyRule {
 
             const records = await HistoryStore.queryAll(ctx, OBJECT_TYPE, [event.bizLocation, srcId]);
             const recent  = records.filter(r => r.timestamp >= cutoff && r.timestamp <= eventTime);
-            const count   = recent.length + 1; // +1 for the current event
+            const orders  = new Set(recent.map((r, i) => r.orderId || `record-${i}`));
+            orders.add(orderIdOf(event));
+            const count   = orders.size;
 
             for (const { min, score, label } of THRESHOLDS) {
                 if (count >= min) {
@@ -101,12 +103,17 @@ class VolumeFragmentationRule extends TaxonomyRule {
 
             await HistoryStore.append(ctx, OBJECT_TYPE, [event.bizLocation, srcId, event.eventID], {
                 timestamp: eventTime,
+                orderId:   orderIdOf(event),
             });
         }
     }
 }
 
 /** GS1 CBV: sourceList uses "source" field (not "value"). */
+function orderIdOf(event) {
+    return (event.ilmd && event.ilmd['cbvmda:lotNumber']) || event.eventID;
+}
+
 function extractSourceId(src) {
     return String(src.source || src.value || '').trim();
 }

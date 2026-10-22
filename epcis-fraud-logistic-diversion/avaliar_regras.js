@@ -22,12 +22,14 @@ for (const e of events) {
   if (tx && labels.has(tx)) (byTx.get(tx) || byTx.set(tx, []).get(tx)).push(e);
 }
 (async () => {
-  const stats = {};
+  const stats = {}, causes = {};
   for (const [tx, evs] of byTx) {
-    const ctx = makeCtx(); let max = 0;
+    const ctx = makeCtx(); let max = 0; const codes = new Set();
     evs.sort((a, b) => new Date(a.eventTime) - new Date(b.eventTime));
     for (const e of evs) {
-      max = Math.max(max, (await RuleEngine.evaluate(ctx, e)).riskScore || 0);
+      const r = await RuleEngine.evaluate(ctx, e);
+      max = Math.max(max, r.riskScore || 0);
+      if ((r.riskScore || 0) >= THRESHOLD) (r.violations || []).forEach(v => codes.add(v.code));
     }
     // auditoria periodica: despacho sem recebimento 31 dias depois do ultimo evento
     const last = new Date(evs[evs.length - 1].eventTime).getTime();
@@ -35,6 +37,8 @@ for (const e of events) {
     if (pending.length > 0) max = Math.max(max, 70);
     const s = stats[labels.get(tx)] || (stats[labels.get(tx)] = { n: 0, flagged: 0 });
     s.n++; if (max >= THRESHOLD) s.flagged++;
+    const t = labels.get(tx), wrong = NEGATIVES.has(t) ? max >= THRESHOLD : max < THRESHOLD;
+    if (wrong) { const k = t + ' -> ' + (NEGATIVES.has(t) ? [...codes].join('+') : 'nao detectado'); causes[k] = (causes[k] || 0) + 1; }
   }
   console.log(`\nAvaliacao por transacao (${path.basename(dir)}, limiar >= ${THRESHOLD})\n`);
   console.log('| Tipo | Transacoes | Marcadas | Taxa |\n|---|---|---|---|');
@@ -44,6 +48,8 @@ for (const e of events) {
     console.log(`| ${t}${neg ? ' (controle negativo)' : ''} | ${s.n} | ${s.flagged} | ${(100 * s.flagged / s.n).toFixed(1)}% |`);
     if (neg) { fp += s.flagged; tn += s.n - s.flagged; } else { tp += s.flagged; fn += s.n - s.flagged; }
   }
+  console.log('\nErros (falso positivo ou nao detectado) por causa:');
+  for (const [k, n] of Object.entries(causes).sort((a, b) => b[1] - a[1])) console.log(`  ${n}x ${k}`);
   const pct = (a, b) => b ? (100 * a / b).toFixed(1) + '%' : 'n/a';
   console.log(`\nPrecisao: ${pct(tp, tp + fp)} | Recall: ${pct(tp, tp + fn)} | Falsos positivos: ${fp} de ${fp + tn} sem anomalia (${pct(fp, fp + tn)})\n`);
 })();

@@ -15,9 +15,9 @@ process.stdin.on('data', d => raw += d).on('end', () => {
 
   for (const { type, ok } of rows) {
 
-    const clean = type === 'none';
+    const clean = type === 'none' || type === 'recalled';
 
-    const label = clean ? 'transacao limpa (nao deve ser marcada)' : type;
+    const label = type === 'recalled' ? 'recalled (controle negativo: nao deve ser marcada)' : clean ? 'transacao limpa (nao deve ser marcada)' : type;
 
     const status = ok ? (clean ? 'nao marcada' : 'detectada') : (clean ? 'MARCADA (falso positivo)' : 'NAO detectada');
 

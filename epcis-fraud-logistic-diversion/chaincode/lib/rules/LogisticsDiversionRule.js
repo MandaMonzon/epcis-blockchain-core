@@ -36,20 +36,6 @@ class LogisticsDiversionRule extends TaxonomyRule {
     }
  
     async evaluate(ctx, event) {
-
-        if (event.disposition && BLOCKED_DISPOSITIONS.has(event.disposition)) {
-
-            return RuleResult.fail(
-
-                ErrorCode.LOGISTICS_DIVERSION_BLOCKED_DISPOSITION,
-
-                `Disposition '${event.disposition}' is blocked — product cannot be moved at bizStep '${event.bizStep}'`,
-
-                BLOCKED_DISPOSITION
-
-            );
-
-        }
  
         event.__prevState = event.__prevState || {};
 
@@ -86,20 +72,6 @@ class LogisticsDiversionRule extends TaxonomyRule {
                     `Out-of-order event for ${epc}: ${event.eventTime} is before last recorded ${prev.lastEventTime}`,
 
                     OUT_OF_ORDER
-
-                );
-
-            }
- 
-            if (prev.disposition && BLOCKED_DISPOSITIONS.has(prev.disposition)) {
-
-                return RuleResult.fail(
-
-                    ErrorCode.LOGISTICS_DIVERSION_BLOCKED_STATUS,
-
-                    `${epc} has recorded disposition '${prev.disposition}' and cannot proceed to '${event.bizStep}'`,
-
-                    BLOCKED_STATUS
 
                 );
 

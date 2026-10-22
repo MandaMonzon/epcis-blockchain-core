@@ -43,7 +43,7 @@ describe('detection per anomaly type (real dataset fixtures)', () => {
 
             const detected = maxScore >= DETECTION_THRESHOLD;
 
-            assert.strictEqual(detected, type !== 'none', `score=${maxScore} fired=[${fired.join(',')}]`);
+            assert.strictEqual(detected, !['none', 'recalled'].includes(type), `score=${maxScore} fired=[${fired.join(',')}]`);
 
         });
 

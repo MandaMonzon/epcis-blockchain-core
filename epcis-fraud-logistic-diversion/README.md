@@ -54,7 +54,7 @@ All values live in `chaincode/constants/RiskScoreConfig.js` and `RuleThresholdsC
 npm install
 npm test                               # unit tests + one fixture per anomaly type
 ./verificar_regras.sh                  # readable table: which anomaly types are detected
-node avaliar_regras.js <dataset_dir>   # per-transaction precision / recall on a generated dataset
+node evaluate_rules.js <dataset_dir>   # per-transaction precision / recall on a generated dataset
 ```
 
 `<dataset_dir>` holds `events.json` and `scenario_template.csv` produced by

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WS="$(cd "$ROOT/.." && pwd)"
+GEN="$WS/epcis-arcos-etl-generator"
+echo "== Machine: $(hostname) | $(date '+%Y-%m-%d %H:%M')"
+echo "== Versions: node $(node --version 2>&1) | python $(python3 --version 2>&1) | docker $(docker --version 2>&1 | cut -d, -f1)"
+echo "== Disk: $(df -h "$WS" | awk 'NR==2{print $4" free ("$5" used)"}')"
+for repo in "$ROOT" "$GEN"; do
+  echo "== Git $(basename "$repo"): $(git -C "$repo" rev-parse --short HEAD) | branch: $(git -C "$repo" rev-parse --abbrev-ref HEAD)"
+  git -C "$repo" status --short | head -8 | sed 's/^/   /'
+done
+echo "== Fabric containers:"
+docker ps --format '   {{.Names}}  {{.Status}}' 2>&1 | grep -E "peer|orderer|logistic" | head -10 || true
+[ -z "$(docker ps -q 2>/dev/null)" ] && echo "   (no containers running)"
+echo "== Data:"
+ls -d "$GEN/output/events.json" "$GEN/data/raw/arcos_raw.gz" 2>&1 | sed 's/^/   /'
+echo "== Previous results:"
+ls -t "$WS/results" 2>/dev/null | head -5 | sed 's/^/   /'

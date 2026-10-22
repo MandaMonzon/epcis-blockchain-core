@@ -1,34 +1,34 @@
-.PHONY: ajuda testar avaliar tudo rede diagnostico limpar limpar-sim mapa
+.PHONY: help test evaluate all network map diagnose clean clean-yes
 
-ajuda:
-	@echo "make testar       testes unitarios das regras"
-	@echo "make avaliar      testes + avaliacao (dataset ja gerado) + RELATORIO.md"
-	@echo "make tudo         regenera o dataset do ARCOS e avalia (reproduz do zero)"
-	@echo "make rede         tudo + teste de carga Caliper na rede Fabric"
-	@echo "make mapa         mostra quais regras disparam em cada tipo de anomalia"
-	@echo "make diagnostico  mostra o estado da maquina (git, docker, versoes)"
-	@echo "make limpar       lista arquivos temporarios (nao apaga); make limpar-sim apaga"
+help:
+	@echo "make test       unit tests for the rules"
+	@echo "make evaluate   tests + evaluation on the existing dataset + REPORT.md"
+	@echo "make all        regenerate the dataset from ARCOS and evaluate (full reproduction)"
+	@echo "make network    all + Caliper load test on the Fabric network"
+	@echo "make map        which rules fire for each anomaly type"
+	@echo "make diagnose   machine state (git, docker, versions)"
+	@echo "make clean      list temporary files (deletes nothing); make clean-yes deletes them"
 
-testar:
+test:
 	cd epcis-fraud-logistic-diversion && npx mocha test/anomalyDetection.test.js
 
-avaliar:
+evaluate:
 	scripts/pipeline.sh
 
-tudo:
-	scripts/pipeline.sh --gerar
+all:
+	scripts/pipeline.sh --regenerate
 
-rede:
-	scripts/pipeline.sh --gerar --rede
+network:
+	scripts/pipeline.sh --regenerate --network
 
-diagnostico:
-	scripts/diagnostico.sh
+map:
+	node analysis_scripts/rule_map.js $${DATA:-../epcis-arcos-etl-generator/output}
 
-limpar:
-	scripts/pipeline.sh --limpar
+diagnose:
+	scripts/diagnose.sh
 
-limpar-sim:
-	scripts/pipeline.sh --limpar --sim
+clean:
+	scripts/pipeline.sh --clean
 
-mapa:
-	node analysis_scripts/mapa_regras.js $${DADOS:-../epcis-arcos-etl-generator/output}
+clean-yes:
+	scripts/pipeline.sh --clean --yes

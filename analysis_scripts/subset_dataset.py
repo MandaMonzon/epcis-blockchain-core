@@ -1,7 +1,7 @@
-"""Reduz um dataset EPCIS completo a N medicamentos x K transacoes por medicamento.
+"""Reduces a full EPCIS dataset to N drugs x K transactions per drug.
 
-Uso: python3 subset_dataset.py <pasta_origem> <pasta_destino> [n_drugs=100] [per_drug=10]
-Entrada: events.json + scenario_template.csv. Saida: mesmos arquivos filtrados.
+Usage: python3 subset_dataset.py <source dir> <target dir> [n_drugs=100] [per_drug=10]
+Input and output: events.json + scenario_template.csv.
 """
 import csv
 import json
@@ -41,4 +41,4 @@ doc['epcisBody']['eventList'] = events
 with open(os.path.join(dst, 'events.json'), 'w') as f:
     json.dump(doc, f)
 
-print(f'{len(count)} medicamentos, {len(keep)} transacoes, {len(events)} eventos -> {dst}')
+print(f'{len(count)} drugs, {len(keep)} transactions, {len(events)} events -> {dst}')

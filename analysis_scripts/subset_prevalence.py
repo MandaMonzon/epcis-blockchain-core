@@ -1,7 +1,7 @@
-"""Cria um dataset com prevalencia controlada de anomalias (ex.: 1%).
+"""Builds a dataset with a controlled anomaly prevalence (e.g. 1%).
 
-Uso: python3 subset_prevalence.py <pasta_origem> <pasta_destino> [taxa=0.01] [semente=42]
-Mantem todas as transacoes sem anomalia (none/recalled) e sorteia anomalias ate atingir a taxa.
+Usage: python3 subset_prevalence.py <source dir> <target dir> [rate=0.01] [seed=42]
+Keeps every normal transaction (none/recalled) and samples anomalies until the rate is reached.
 """
 import csv
 import json
@@ -40,5 +40,5 @@ doc['epcisBody']['eventList'] = events
 with open(os.path.join(dst, 'events.json'), 'w') as f:
     json.dump(doc, f)
 
-print(f'{len(neg)} normais + {n_pos} anomalas = {len(keep)} transacoes '
-      f'(prevalencia {n_pos / len(keep):.2%}), {len(events)} eventos -> {dst}')
+print(f'{len(neg)} normal + {n_pos} anomalous = {len(keep)} transactions '
+      f'(prevalence {n_pos / len(keep):.2%}), {len(events)} events -> {dst}')

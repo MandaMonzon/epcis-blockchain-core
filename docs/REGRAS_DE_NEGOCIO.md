@@ -74,6 +74,6 @@ um comprador dos EUA (dados reais de transações do ARCOS/DEA).
 | # | Achado | Impacto |
 |---|---|---|
 | 1 | `OUT_OF_ORDER` (30) nunca decide; `out_of_order` e `item_location_mismatch` são detectados por `SKIPPED_LIFECYCLE_STEP` | Os rótulos do gerador não correspondem a regras dedicadas |
-| 2 | No dataset antigo, `LOGISTICS_DIVERSION_SEQUENCE` (60) disparava em ~51% das transações normais, mas esse dataset tinha ids repetidos. A confirmar no dataset novo com `make mapa` | Pode ser só efeito do bug de dados já corrigido |
+| 2 | No dataset antigo, `LOGISTICS_DIVERSION_SEQUENCE` (60) disparava em ~51% das transações normais, mas esse dataset tinha ids repetidos. A confirmar no dataset novo com `make map` | Pode ser só efeito do bug de dados já corrigido |
 | 3 | Tolerância de quantidade 10% e prazo de 30 dias não têm fonte; literatura indica 0,5–1% | Calibração, pendente de decisão |
 | 4 | Dados sintéticos e prevalência ~70% | A métrica mede consistência entre gerador e regras, não desempenho real |

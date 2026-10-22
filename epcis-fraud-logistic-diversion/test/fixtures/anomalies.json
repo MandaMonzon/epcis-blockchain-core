@@ -14217,6 +14217,56 @@
         }
       },
       {
+        "eventID": "urn:uuid:b34eac12acf5f1c424a1f7c0e83f626c",
+        "type": "ObjectEvent",
+        "action": "OBSERVE",
+        "eventTime": "2008-01-29T00:00:00Z",
+        "eventTimeZoneOffset": "+00:00",
+        "bizStep": "receiving",
+        "disposition": "active",
+        "epcList": [
+          "urn:epc:id:sgtin:0614141.107346.575407757127"
+        ],
+        "readPoint": {
+          "id": "urn:epc:id:sgln:us.dea.BR3019038.0.0"
+        },
+        "bizLocation": {
+          "id": "urn:epc:id:sgln:us.dea.BR3019038.0.0"
+        },
+        "sourceList": [
+          {
+            "type": "location",
+            "source": "urn:epc:id:pgln:4000009.00008"
+          },
+          {
+            "type": "possessing_party",
+            "source": "urn:epc:id:pgln:4000009.00008"
+          },
+          {
+            "type": "owning_party",
+            "source": "urn:epc:id:pgln:4000009.00008"
+          }
+        ],
+        "destinationList": [
+          {
+            "type": "location",
+            "destination": "urn:epc:id:sgln:us.dea.BR3019038.0.0"
+          },
+          {
+            "type": "possessing_party",
+            "destination": "urn:epc:id:pgln:us.dea.BR3019038"
+          },
+          {
+            "type": "owning_party",
+            "destination": "urn:epc:id:pgln:us.dea.BR3019038"
+          }
+        ],
+        "ilmd": {
+          "cbvmda:lotNumber": "LOT-58177032004-0001",
+          "cbvmda:transactionID": "801045442.0"
+        }
+      },
+      {
         "eventID": "urn:uuid:1e489f2e7297e241dabae506b06dbe38",
         "type": "ObjectEvent",
         "action": "OBSERVE",
@@ -15422,56 +15472,6 @@
           {
             "type": "owning_party",
             "source": "urn:epc:id:pgln:4000000.99999"
-          }
-        ],
-        "destinationList": [
-          {
-            "type": "location",
-            "destination": "urn:epc:id:sgln:us.dea.BR3019038.0.0"
-          },
-          {
-            "type": "possessing_party",
-            "destination": "urn:epc:id:pgln:us.dea.BR3019038"
-          },
-          {
-            "type": "owning_party",
-            "destination": "urn:epc:id:pgln:us.dea.BR3019038"
-          }
-        ],
-        "ilmd": {
-          "cbvmda:lotNumber": "LOT-58177032004-0001",
-          "cbvmda:transactionID": "801045442.0"
-        }
-      },
-      {
-        "eventID": "urn:uuid:b34eac12acf5f1c424a1f7c0e83f626c",
-        "type": "ObjectEvent",
-        "action": "OBSERVE",
-        "eventTime": "2008-02-10T00:00:00Z",
-        "eventTimeZoneOffset": "+00:00",
-        "bizStep": "receiving",
-        "disposition": "active",
-        "epcList": [
-          "urn:epc:id:sgtin:0614141.107346.575407757127"
-        ],
-        "readPoint": {
-          "id": "urn:epc:id:sgln:us.dea.BR3019038.0.0"
-        },
-        "bizLocation": {
-          "id": "urn:epc:id:sgln:us.dea.BR3019038.0.0"
-        },
-        "sourceList": [
-          {
-            "type": "location",
-            "source": "urn:epc:id:pgln:4000009.00008"
-          },
-          {
-            "type": "possessing_party",
-            "source": "urn:epc:id:pgln:4000009.00008"
-          },
-          {
-            "type": "owning_party",
-            "source": "urn:epc:id:pgln:4000009.00008"
           }
         ],
         "destinationList": [

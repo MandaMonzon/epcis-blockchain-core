@@ -14,7 +14,7 @@ const { makeCtx } = require('./helpers');
 const fixtures   = require('./fixtures/anomalies.json');
  
 const DETECTION_THRESHOLD = 70;
-const KNOWN_GAPS = new Set(['item_location_mismatch']);
+const KNOWN_GAPS = new Set([]);
  
 async function replayTransaction(events) {
 

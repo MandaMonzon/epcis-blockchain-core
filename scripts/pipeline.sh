@@ -48,7 +48,8 @@ echo; echo "== 1/5 Testes unitarios das regras =="
 (cd "$CC" && npx mocha test/anomalyDetection.test.js) | tee "$OUT/testes.txt" | tail -8
 
 DATA="$GEN/output"
-RAW="$(ls "$GEN/data/arcos_raw.gz" "$GEN/data/raw/arcos_raw.gz" 2>/dev/null | head -1)"
+RAW=""
+for f in "$GEN/data/arcos_raw.gz" "$GEN/data/raw/arcos_raw.gz"; do [ -z "$RAW" ] && [ -f "$f" ] && RAW="$f"; done
 if [ "$GERAR" = 1 ] || [ ! -f "$DATA/events.json" ]; then
   echo; echo "== 2/5 Gerando dataset a partir do ARCOS =="
   [ -n "$RAW" ] || { echo "erro: arcos_raw.gz nao encontrado em $GEN/data"; exit 1; }

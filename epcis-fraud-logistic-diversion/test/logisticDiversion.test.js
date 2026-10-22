@@ -137,6 +137,16 @@ describe('LogisticsDiversionRule — Class B', () => {
 
     });
  
+    it('reads the jurisdiction from the URN marker, not from the registrant number', async () => {
+        const event = makeEvent({
+            bizStep:         'dispensing',
+            sourceList:      [{ type: 'owning_party', source: 'urn:epc:id:pgln:us.dea.EU7100642' }],
+            destinationList: [{ type: 'owning_party', destination: 'urn:epc:id:pgln:us.dea.US0000001' }],
+        });
+        const result = await RuleEngine.evaluate(ctx, event);
+        expect(result.violations.filter(v => v.code === 'LOGISTICS_DIVERSION_JURISDICTION')).to.be.empty;
+    });
+
     it('accepts EU → US move at shipping step', async () => {
 
         const event = makeEvent({

@@ -26,6 +26,7 @@ const { ErrorCode, BizStep } = require('../../constants/EpcisConstants');
 const { FRAGMENTATION_ELEVATED, FRAGMENTATION_HIGH } = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig = require('../../constants/RuleThresholdsConfig');
 const HistoryStore = require('../util/HistoryStore');
+const { locationId } = require('../util/locationId');
 
 const WINDOW_DAYS  = RuleThresholdsConfig.VOLUME_FRAGMENTATION_WINDOW_DAYS;
 const WINDOW_MS    = WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -52,7 +53,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
 
     async evaluate(ctx, event) {
         if (!RECEIVING_STEPS.has(event.bizStep))                                 return RuleResult.pass();
-        if (!event.bizLocation)                                                  return RuleResult.pass();
+        if (!locationId(event))                                                  return RuleResult.pass();
         if (!Array.isArray(event.sourceList) || event.sourceList.length === 0)  return RuleResult.pass();
 
         const eventTime = new Date(event.eventTime).getTime();
@@ -64,7 +65,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
             const srcId = extractSourceId(src);
             if (!srcId) continue;
 
-            const records = await HistoryStore.queryAll(ctx, OBJECT_TYPE, [event.bizLocation, srcId]);
+            const records = await HistoryStore.queryAll(ctx, OBJECT_TYPE, [locationId(event), srcId]);
             const recent  = records.filter(r => r.timestamp >= cutoff && r.timestamp <= eventTime);
             const orders  = new Set(recent.map((r, i) => r.orderId || `record-${i}`));
             orders.add(orderIdOf(event));
@@ -74,7 +75,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
                 if (count >= min) {
                     return RuleResult.fail(
                         ErrorCode.VOLUME_FRAGMENTATION,
-                        `${label}: buyer '${event.bizLocation}' received ${count} orders ` +
+                        `${label}: buyer '${locationId(event)}' received ${count} orders ` +
                         `from '${srcId}' in the last ${WINDOW_DAYS} days`,
                         score
                     );
@@ -92,7 +93,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
      */
     static async updateFragmentationState(ctx, event) {
         if (!RECEIVING_STEPS.has(event.bizStep)) return;
-        if (!event.bizLocation || !Array.isArray(event.sourceList)) return;
+        if (!locationId(event) || !Array.isArray(event.sourceList)) return;
 
         const eventTime = new Date(event.eventTime).getTime();
         if (isNaN(eventTime)) return;
@@ -101,7 +102,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
             const srcId = extractSourceId(src);
             if (!srcId) continue;
 
-            await HistoryStore.append(ctx, OBJECT_TYPE, [event.bizLocation, srcId, event.eventID], {
+            await HistoryStore.append(ctx, OBJECT_TYPE, [locationId(event), srcId, event.eventID], {
                 timestamp: eventTime,
                 orderId:   orderIdOf(event),
             });

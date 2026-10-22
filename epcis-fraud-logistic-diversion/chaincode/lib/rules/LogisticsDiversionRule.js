@@ -114,23 +114,20 @@ function isEuGs1Prefix(val) {
     return !!m && Number(m[1]) >= 400 && Number(m[1]) <= 440;
 }
 
+// The jurisdiction marker is the first segment of the URN authority (for example 'us.dea.' or 'eu.gln.').
+// Matching it anywhere in the identifier misreads DEA registrant numbers that start with 'EU' or 'US'.
+const MARKER_JURISDICTION = { eu: 'EU', us: 'US' };
+
 function extractJurisdiction(list) {
-
     if (!Array.isArray(list)) return null;
-
     for (const entry of list) {
-
         const val = String(entry.source || entry.destination || entry.value || '').toLowerCase();
-
-        if (val.includes('eu.') || val.includes('.eu') || isEuGs1Prefix(val)) return 'EU';
-
-        if (val.includes('us.') || val.includes('.us')) return 'US';
-
+        const marker = /:(?:sgln|pgln):([a-z]{2})\./.exec(val);
+        if (marker && MARKER_JURISDICTION[marker[1]]) return MARKER_JURISDICTION[marker[1]];
+        if (isEuGs1Prefix(val)) return 'EU';
     }
-
     return null;
-
 }
- 
+
 module.exports = LogisticsDiversionRule;
 

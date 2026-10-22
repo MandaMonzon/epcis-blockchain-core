@@ -42,6 +42,7 @@
  */
 
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
+const { locationId } = require('../util/locationId');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { TRANSIT_DIVERSION }         = require('../../constants/RiskScoreConfig');
 
@@ -59,7 +60,7 @@ class TransitDiversionRule extends TaxonomyRule {
         // ── ObjectEvent: check receiving location vs intended destination ──────
         if (event.type === 'ObjectEvent') {
             if (event.bizStep === 'receiving') {
-                const actualLocation = event.bizLocation?.id || '';
+                const actualLocation = locationId(event);
                 for (const epc of (event.epcList || [])) {
                     const key        = TRANSIT_KEY_PREFIX + epc;
                     const stateBytes = await ctx.stub.getState(key);
@@ -83,7 +84,7 @@ class TransitDiversionRule extends TaxonomyRule {
 
         // ── AggregationEvent DELETE: check unpacking location ─────────────────
         if (event.type === 'AggregationEvent' && event.action === 'DELETE') {
-            const actualLocation = event.bizLocation?.id || '';
+            const actualLocation = locationId(event);
             for (const epc of (event.childEPCs || [])) {
                 const key        = TRANSIT_KEY_PREFIX + epc;
                 const stateBytes = await ctx.stub.getState(key);
@@ -123,7 +124,7 @@ class TransitDiversionRule extends TaxonomyRule {
                 epc,
                 intendedDest,
                 shipTime:    event.eventTime || null,
-                shipFrom:    event.bizLocation?.id || null,
+                shipFrom:    locationId(event) || null,
                 txnId:       event.ilmd?.['cbvmda:transactionID'] || null,
             };
             await ctx.stub.putState(key, Buffer.from(JSON.stringify(state)));

@@ -30,6 +30,14 @@ function groupByTransaction(events) {
   return groups;
 }
 
+// Same normalisation as LogisticDiversionContract.submitEvent, so the scores match what the network computes.
+function flattenLocations(event) {
+  for (const key of ['bizLocation', 'readPoint']) {
+    if (event[key] && typeof event[key] === 'object') event[key] = event[key].id || '';
+  }
+  return event;
+}
+
 const toViolations = result => (result.violations || []).map(v => ({ code: v.code, score: v.score || 0 }));
 
 async function scoreTransaction(tx, entries) {
@@ -38,7 +46,7 @@ async function scoreTransaction(tx, entries) {
   const events = [];
   let score = 0;
   for (const { event } of ordered) {
-    const result = await RuleEngine.evaluate(ctx, JSON.parse(JSON.stringify(event)));
+    const result = await RuleEngine.evaluate(ctx, flattenLocations(JSON.parse(JSON.stringify(event))));
     const violations = toViolations(result);
     score = Math.max(score, result.riskScore || 0, ...violations.map(v => v.score));
     events.push({ eventID: event.eventID, violations });

@@ -36,6 +36,7 @@
  */
 
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
+const { locationId } = require('../util/locationId');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { QUANTITY_DISCREPANCY }      = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
@@ -106,7 +107,7 @@ class QuantityDiscrepancyRule extends TaxonomyRule {
             count:       Array.isArray(event.childEPCs) ? event.childEPCs.length : 0,
             sgtins:      Array.isArray(event.childEPCs) ? event.childEPCs : [],
             packedAt:    event.eventTime || null,
-            bizLocation: event.bizLocation?.id || null,
+            bizLocation: locationId(event) || null,
             txnId:       event.ilmd?.['cbvmda:transactionID'] || null,
         };
         await ctx.stub.putState(key, Buffer.from(JSON.stringify(state)));

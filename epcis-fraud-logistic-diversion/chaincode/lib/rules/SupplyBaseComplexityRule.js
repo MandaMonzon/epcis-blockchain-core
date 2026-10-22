@@ -54,6 +54,7 @@
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 
 const HistoryStore = require('../util/HistoryStore');
+const { locationId } = require('../util/locationId');
 
 const { ErrorCode, BizStep } = require('../../constants/EpcisConstants');
 
@@ -91,7 +92,7 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
 
         if (!RECEIVING_STEPS.has(event.bizStep))                                   return RuleResult.pass();
 
-        if (!event.bizLocation)                                                    return RuleResult.pass();
+        if (!locationId(event))                                                  return RuleResult.pass();
 
         if (!Array.isArray(event.sourceList) || event.sourceList.length === 0)    return RuleResult.pass();
  
@@ -137,7 +138,7 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
  
     static async updateComplexityState(ctx, event) {
 
-        if (!event.bizLocation || !Array.isArray(event.sourceList)) return;
+        if (!locationId(event) || !Array.isArray(event.sourceList)) return;
  
         for (const src of event.sourceList) {
 
@@ -159,11 +160,6 @@ class SupplyBaseComplexityRule extends TaxonomyRule {
 
 }
  
-function locationId(event) {
-    const loc = event.bizLocation;
-    return String((loc && loc.id) || loc || '');
-}
-
 const PARTY_TYPES = new Set(['possessing_party', 'owning_party']);
 
 function extractSupplierId(src) {

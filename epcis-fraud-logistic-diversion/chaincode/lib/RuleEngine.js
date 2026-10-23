@@ -1,116 +1,89 @@
 'use strict';
 
-/**
- * RuleEngine.js
- * =============
- * Orchestrates the two-layer validation:
- *
- *   Class A (blocking): runs first — if any rule fails, the event is rejected.
- *   Class B (cumulative): runs after Class A passes — scores are summed and
- *                         clamped to [0, 100].
- *
- * State updates: after evaluation, the engine persists per-EPC and per-buyer
- * state so sequence checks, timing checks, and fragmentation counts work
- * correctly across events.
- *
- * The final result includes:
- *   - accepted: true/false
- *   - riskScore: 0–100 (only set when accepted = true)
- *   - violations: list of rule failures with their codes and messages
- */
-
-const MandatoryFieldsRule           = require('./rules/MandatoryFieldsRule');
-const LogisticsDiversionRule        = require('./rules/LogisticsDiversionRule');
-const SupplyBaseComplexityRule       = require('./rules/SupplyBaseComplexityRule');
-const VolumeFragmentationRule        = require('./rules/VolumeFragmentationRule');
-const LotContaminationRule           = require('./rules/LotContaminationRule');
-const QuantityDiscrepancyRule        = require('./rules/QuantityDiscrepancyRule');
-const ShipmentReceiptDivergenceRule  = require('./rules/ShipmentReceiptDivergenceRule');
-const TransitDiversionRule           = require('./rules/TransitDiversionRule');
+const MandatoryFieldsRule = require('./rules/MandatoryFieldsRule');
+const LogisticsDiversionRule = require('./rules/LogisticsDiversionRule');
+const SupplyBaseComplexityRule = require('./rules/SupplyBaseComplexityRule');
+const VolumeFragmentationRule = require('./rules/VolumeFragmentationRule');
+const LotContaminationRule = require('./rules/LotContaminationRule');
+const QuantityDiscrepancyRule = require('./rules/QuantityDiscrepancyRule');
+const ShipmentReceiptDivergenceRule = require('./rules/ShipmentReceiptDivergenceRule');
+const TransitDiversionRule = require('./rules/TransitDiversionRule');
 const TransitTimeRule = require('./rules/TransitTimeRule');
 const LifecycleSequenceRule = require('./rules/LifecycleSequenceRule');
 
-// Class A — any failure immediately rejects the event
-const CLASS_A_RULES = [
-    new MandatoryFieldsRule(),
-];
+const MAX_RISK_SCORE = 100;
 
-// Class B — scores accumulate; event is still recorded but flagged
-const CLASS_B_RULES = [
+// Class A: a failure rejects the event.
+const BLOCKING_RULES = [new MandatoryFieldsRule()];
+
+// Class B: the event is recorded and the highest violation score is its risk score.
+// LotContaminationRule must stay last: it reads the lot state written by the other rules.
+const SCORING_RULES = [
     new LogisticsDiversionRule(),
-    // Skilton et al. (2024) derived the ≥9 suppliers threshold from domestic US
-    // ARCOS data. Our scenario is EU→US logistics diversion — the buyer's supplier
-    // count reflects legitimate domestic purchasing patterns, not cross-border
-    // transit anomalies. Keeping this rule may inflate false positives without
-    // adding scientific validity to the logistics diversion detection.
     new SupplyBaseComplexityRule(),
     new VolumeFragmentationRule(),
-    new QuantityDiscrepancyRule(),        // AggregationEvent: packed ≠ arrived count
-    new ShipmentReceiptDivergenceRule(),  // TransactionEvent: desadv without recadv
-    new TransitDiversionRule(),           // receiving location ≠ declared destination
+    new QuantityDiscrepancyRule(),
+    new ShipmentReceiptDivergenceRule(),
+    new TransitDiversionRule(),
     new TransitTimeRule(),
     new LifecycleSequenceRule(),
-    new LotContaminationRule(),           // must run last — reads lot state set by other rules
+    new LotContaminationRule(),
 ];
 
-class RuleEngine {
-    /**
-     * Evaluates an EPCIS event against all rules.
-     * Returns { accepted, riskScore, violations }.
-     */
-    static async evaluate(ctx, event) {
-        const violations = [];
+// Ledger state written after scoring; the order matters because lot contamination reads the violations.
+const STATE_UPDATERS = [
+    (ctx, event) => LogisticsDiversionRule.updateProductState(ctx, event),
+    (ctx, event) => SupplyBaseComplexityRule.updateComplexityState(ctx, event),
+    (ctx, event) => VolumeFragmentationRule.updateFragmentationState(ctx, event),
+    (ctx, event) => QuantityDiscrepancyRule.updateQuantityState(ctx, event),
+    (ctx, event) => ShipmentReceiptDivergenceRule.updateShipmentState(ctx, event),
+    (ctx, event) => TransitDiversionRule.updateTransitState(ctx, event),
+    (ctx, event) => LifecycleSequenceRule.updateLifecycleState(ctx, event),
+    (ctx, event, violations) => LotContaminationRule.updateLotRiskState(ctx, event, violations),
+];
 
-        // Class A — blocking
-        for (const rule of CLASS_A_RULES) {
+function toViolation(rule, result) {
+    return {
+        rule: rule.name,
+        code: result.errorCode,
+        message: result.message,
+        score: result.score,
+        ...result.meta,
+    };
+}
+
+class RuleEngine {
+    static async evaluate(ctx, event) {
+        for (const rule of BLOCKING_RULES) {
             const result = await rule.evaluate(ctx, event);
             if (!result.passed) {
                 return {
-                    accepted:  false,
+                    accepted: false,
                     riskScore: 0,
                     violations: [{ rule: rule.name, code: result.errorCode, message: result.message }],
                 };
             }
         }
 
-        // Class B — cumulative risk scoring
-        let totalScore = 0;
-        for (const rule of CLASS_B_RULES) {
+        const violations = [];
+        let highestScore = 0;
+        for (const rule of SCORING_RULES) {
             const result = await rule.evaluate(ctx, event);
-            if (!result.passed) {
-                totalScore = Math.max(totalScore, result.score);
-                const violation = {
-                    rule:    rule.name,
-                    code:    result.errorCode,
-                    message: result.message,
-                    score:   result.score,
-                };
-                // Merge any extra fields from meta (e.g. supplierCount from SupplyBaseComplexityRule)
-                if (result.meta) Object.assign(violation, result.meta);
-                violations.push(violation);
-            }
+            if (result.passed) continue;
+            highestScore = Math.max(highestScore, result.score);
+            violations.push(toViolation(rule, result));
         }
 
-        // Persist ledger state so future events can check sequences,
-        // timing, supply complexity, fragmentation, quantity, and transit patterns.
-        await LogisticsDiversionRule.updateProductState(ctx, event);
-        await SupplyBaseComplexityRule.updateComplexityState(ctx, event);
-        await VolumeFragmentationRule.updateFragmentationState(ctx, event);
-        await QuantityDiscrepancyRule.updateQuantityState(ctx, event);
-        await ShipmentReceiptDivergenceRule.updateShipmentState(ctx, event);
-        await TransitDiversionRule.updateTransitState(ctx, event);
-        await LifecycleSequenceRule.updateLifecycleState(ctx, event);
-        await LotContaminationRule.updateLotRiskState(ctx, event, violations);
-
-        // Score is clamped to [0, 100]
-        const riskScore = Math.min(100, totalScore);
+        for (const update of STATE_UPDATERS) {
+            await update(ctx, event, violations);
+        }
 
         return {
-            accepted:   true,
-            eventID:    event.eventID   || null,
-            epc:        Array.isArray(event.epcList) ? (event.epcList[0] || null) : null,
-            bizStep:    event.bizStep   || null,
-            riskScore,
+            accepted: true,
+            eventID: event.eventID || null,
+            epc: Array.isArray(event.epcList) ? (event.epcList[0] || null) : null,
+            bizStep: event.bizStep || null,
+            riskScore: Math.min(MAX_RISK_SCORE, highestScore),
             violations,
         };
     }

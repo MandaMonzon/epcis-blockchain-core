@@ -1,47 +1,10 @@
 'use strict';
 
 /**
- * Class B — Shipment Receipt Divergence Rule
- * ============================================
- * Detects divergence between a seller's despatch advice (TransactionEvent
- * with type=desadv) and the buyer's receiving confirmation (TransactionEvent
- * with type=recadv) for the same lot.
+ * Class B: a desadv TransactionEvent (shipping) with no recadv (receiving) after the transit window.
  *
- * SCENARIO
- * --------
- * A seller emits a TransactionEvent (desadv) confirming shipment of a lot.
- * The buyer never emits a corresponding TransactionEvent (recadv) confirming
- * receipt. This means the product was documented as shipped but no party
- * confirmed it arrived — a strong signal of logistics diversion or cargo theft.
- *
- * DETECTION LOGIC
- * ---------------
- * 1. On TransactionEvent (type=desadv, bizStep=shipping):
- *    Save { shipped: true, destination, shipTime, sgtins[] } under key
- *    ship_div_{txnId} in the ledger.
- *
- * 2. On TransactionEvent (type=recadv, bizStep=receiving):
- *    Mark the lot as confirmed. No violation.
- *
- * 3. On any subsequent ObjectEvent for EPCs from a lot that has a desadv
- *    but no recadv after the expected transit window (TRANSIT_DAYS_MAX):
- *    Fire SHIPMENT_DIVERGENCE.
- *
- * NOTE: In the simulation context, divergence is flagged on the next
- * ObjectEvent after the expected receiving date if no recadv was seen.
- * This avoids requiring a timeout mechanism in the smart contract.
- *
- * REGULATORY BASIS
- * ----------------
- * DSCSA 21 USC §360eee-1(c)(1):
- *   Trading partners must respond to suspect product notifications —
- *   absence of receiving confirmation is a suspect product indicator.
- *
- * GS1 EPCIS 2.0 — TransactionEvent:
- *   https://ref.gs1.org/standards/epcis (Section 7.4)
- * GS1 CBV 2.0 — bizTransactionList types:
- *   urn:epcglobal:cbv:btt:desadv — Despatch Advice (seller confirms shipment)
- *   urn:epcglobal:cbv:btt:recadv — Receiving Advice (buyer confirms receipt)
+ * Basis: DSCSA 21 USC 360eee-1(c)(1) treats a missing receiving confirmation as a suspect product indicator.
+ * GS1 CBV 2.0 bizTransaction types: urn:epcglobal:cbv:btt:desadv and urn:epcglobal:cbv:btt:recadv.
  */
 
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
@@ -51,9 +14,7 @@ const RuleThresholdsConfig          = require('../../constants/RuleThresholdsCon
 const { extractLotId }              = require('../util/LotIdentifier');
 
 const SHIP_DIV_KEY      = 'ship_div_';
-// Was hardcoded at 30, no source (see Relatorio_Fontes_Blockchain.docx:
-// "não existe prazo de 30 dias na lei"). Centralized so it can be re-run
-// at other values (3/5/7 days) for a sensitivity comparison.
+// The 30-day deadline had no legal source; the window is configurable for sensitivity runs.
 const TRANSIT_DAYS_MAX  = RuleThresholdsConfig.SHIPMENT_TRANSIT_DAYS_MAX;
 
 class ShipmentReceiptDivergenceRule extends TaxonomyRule {
@@ -117,26 +78,7 @@ class ShipmentReceiptDivergenceRule extends TaxonomyRule {
         return RuleResult.pass();
     }
 
-    /**
-     * auditPendingShipments — PROACTIVE scan for lots that have a desadv
-     * (shipped=true) but no recadv (received=false) past TRANSIT_DAYS_MAX,
-     * regardless of whether any NEW event arrives for that lot afterwards.
-     *
-     * WHY THIS WAS NEEDED (bug found 22/09):
-     * The per-event check above (inside evaluate()) only fires
-     * SHIPMENT_DIVERGENCE reactively, piggy-backed on a *subsequent*
-     * ObjectEvent for the same lot. If no further event is ever submitted
-     * for that lot (e.g. the chain of custody simply stops after shipping),
-     * the divergence is NEVER flagged — a silent miss, not a "hard to
-     * detect" anomaly. Analysis of experiment_results.xlsx showed detection
-     * rates as low as 3.1% for 'Shipment Without Receipt Confirmation' on
-     * some medications, which traced back to exactly this gap.
-     *
-     * FIX: this method actively scans all ship_div_* keys (called from
-     * getAuditSummary / a dedicated 'auditPendingShipments' contract
-     * function) so missing recadv is caught even with no follow-up event —
-     * matching the existing Caliper 'getAuditSummary' benchmark round.
-     */
+    /** Scans every shipped lot without a recadv past the window, so a lot whose chain simply stops is still caught. */
     static async auditPendingShipments(ctx, asOfDate) {
         const now = new Date(asOfDate || Date.now());
         const pending = [];

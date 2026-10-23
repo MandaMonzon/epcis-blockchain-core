@@ -104,11 +104,12 @@ def check_accounting(raw_path, extract_result, dataset, events):
     scenario = dataset["scenario_result"]["accounting"]
     conversion = dataset["convert_result"]["accounting"]
     skipped = extract_result["skipped"]
+    unsampled = extract_result.get("not_in_random_sample", 0)
     reasons = sum(extract_result["skip_reasons"].values())
     lots = len({e["ilmd"]["cbvmda:transactionID"] for e in events})
     checks = {
         "raw rows == rows_read": raw_rows == extract_result["rows_read"],
-        "rows_read == converted + skipped": extract_result["rows_read"] == extract_result["converted"] + skipped,
+        "rows_read == converted + skipped + not in random sample": extract_result["rows_read"] == extract_result["converted"] + skipped + unsampled,
         "every skipped row has one recorded reason": reasons == skipped,
         "extract output == scenario rows read": extract_result["converted"] == scenario["rows_read"],
         "scenario rows == selected + discards": scenario["rows_read"] == scenario["selected"] + sum(scenario["discarded"].values()),
@@ -117,8 +118,8 @@ def check_accounting(raw_path, extract_result, dataset, events):
         "lots in events.json == lots_converted": lots == conversion["lots_converted"],
         "event count == generated events": len(events) == dataset["convert_result"]["events"],
     }
-    discarded = skipped + sum(scenario["discarded"].values()) + sum(conversion["discarded"].values())
-    detail = (f"raw={raw_rows} = lots_in_events({lots}) + discarded({discarded}); skip reasons={extract_result['skip_reasons']}; "
+    discarded = skipped + unsampled + sum(scenario["discarded"].values()) + sum(conversion["discarded"].values())
+    detail = (f"raw={raw_rows} = lots_in_events({lots}) + discarded({discarded}); skip reasons={extract_result['skip_reasons']}; not in random sample={unsampled}; "
               f"scenario discards={scenario['discarded']}; conversion discards={conversion['discarded']}")
     failed = [k for k, v in checks.items() if not v]
     identity = raw_rows == lots + discarded

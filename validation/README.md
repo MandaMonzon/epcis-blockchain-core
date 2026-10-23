@@ -3,6 +3,10 @@
 `make validate` runs items 1-18 and writes `validation/REPORT.md`
 (`VALIDATE_ARGS="--seeds 30 --raw <arcos.gz>"`).
 
+On the real ARCOS use a random sample, not `--limit` (which only reads the first rows):
+`VALIDATE_ARGS="--seeds 30 --raw <arcos.gz> --sample-rows 300000 --sample-seed 1"`. The report states the
+sample size and the chi-square representativeness against the population.
+
 Item 19 (Fabric network vs local evaluator), on a fresh ledger:
 
     node validation/network_equivalence.js prepare <dataset dir> subset.json

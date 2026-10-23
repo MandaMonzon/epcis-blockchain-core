@@ -1,6 +1,6 @@
 """Runs the validation suite (items A-F) and writes validation/REPORT.md.
 
-Usage: python3 -m validation.run_validation [--seeds 30] [--raw arcos_raw.gz] [--limit N] [--work DIR]
+Usage: python3 -m validation.run_validation [--seeds 30] [--raw arcos_raw.gz] [--limit N | --sample-rows N --sample-seed S] [--work DIR]
 """
 import argparse
 import json
@@ -152,7 +152,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--raw")
-    parser.add_argument("--limit", type=int)
+    parser.add_argument("--limit", type=int, help="first N rows of the raw file (NOT a random sample)")
+    parser.add_argument("--sample-rows", type=int, help="uniform random sample of N valid rows over the whole raw file")
+    parser.add_argument("--sample-seed", type=int, default=0)
     parser.add_argument("--sample-per-drug", type=int, default=10)
     parser.add_argument("--work", default=str(ROOT / "validation" / "work"))
     parser.add_argument("--old-refs", nargs="*", default=["200fabf", "ba67b09"])
@@ -169,7 +171,14 @@ def main():
         raw = work / "synthetic_raw.gz"
         injected = write_synthetic_raw(raw)
         source = f"synthetic ARCOS-like file (known defects injected: {injected})"
-    clean_csv, extract_result = extract_clean(raw, work, limit=args.limit)
+    clean_csv, extract_result = extract_clean(raw, work, limit=args.limit, sample_rows=args.sample_rows, seed=args.sample_seed)
+    if "representativeness" in extract_result:
+        rep = extract_result["representativeness"]
+        source += (f"; random sample of {extract_result['converted']:,} of {extract_result['population_valid']:,} valid rows "
+                   f"(seed {extract_result['sample_seed']}); chi-square vs population: year p={rep['year']['p_value']:.3g} "
+                   f"(TV={rep['year']['total_variation']:.4f}), drug p={rep['drug']['p_value']:.3g} (TV={rep['drug']['total_variation']:.4f})")
+    elif args.limit:
+        source += f"; FIRST {args.limit:,} rows of the file (head sample, not random)"
     print(f"extract: {extract_result['converted']} converted of {extract_result['rows_read']} rows", flush=True)
 
     per_seed = []

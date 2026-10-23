@@ -155,6 +155,7 @@ def main():
     parser.add_argument("--limit", type=int, help="first N rows of the raw file (NOT a random sample)")
     parser.add_argument("--sample-rows", type=int, help="uniform random sample of N valid rows over the whole raw file")
     parser.add_argument("--sample-seed", type=int, default=0)
+    parser.add_argument("--sample-design", choices=("stratified", "simple"), default="stratified")
     parser.add_argument("--sample-per-drug", type=int, default=10)
     parser.add_argument("--work", default=str(ROOT / "validation" / "work"))
     parser.add_argument("--old-refs", nargs="*", default=["200fabf", "ba67b09"])
@@ -171,12 +172,18 @@ def main():
         raw = work / "synthetic_raw.gz"
         injected = write_synthetic_raw(raw)
         source = f"synthetic ARCOS-like file (known defects injected: {injected})"
-    clean_csv, extract_result = extract_clean(raw, work, limit=args.limit, sample_rows=args.sample_rows, seed=args.sample_seed)
+    clean_csv, extract_result = extract_clean(raw, work, limit=args.limit, sample_rows=args.sample_rows, seed=args.sample_seed, design=args.sample_design)
     if "representativeness" in extract_result:
         rep = extract_result["representativeness"]
+        if extract_result["sampling_design"] == "stratified":
+            fit = (f"stratified by drug (floor {rep['drug']['min_per_stratum']}; {rep['drug']['strata']} drugs, "
+                   f"{rep['drug']['taken_whole']} taken whole); weighted year total variation vs population "
+                   f"{rep['year']['total_variation']:.4f}")
+        else:
+            fit = (f"simple random; chi-square vs population: year p={rep['year']['p_value']:.3g} "
+                   f"(TV={rep['year']['total_variation']:.4f}), drug p={rep['drug']['p_value']:.3g}")
         source += (f"; random sample of {extract_result['converted']:,} of {extract_result['population_valid']:,} valid rows "
-                   f"(seed {extract_result['sample_seed']}); chi-square vs population: year p={rep['year']['p_value']:.3g} "
-                   f"(TV={rep['year']['total_variation']:.4f}), drug p={rep['drug']['p_value']:.3g} (TV={rep['drug']['total_variation']:.4f})")
+                   f"(seed {extract_result['sample_seed']}), {fit}")
     elif args.limit:
         source += f"; FIRST {args.limit:,} rows of the file (head sample, not random)"
     print(f"extract: {extract_result['converted']} converted of {extract_result['rows_read']} rows", flush=True)

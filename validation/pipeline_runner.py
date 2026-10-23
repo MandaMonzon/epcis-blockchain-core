@@ -22,9 +22,9 @@ def sha256_of(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def extract_clean(raw_path, out_dir, limit=None, sample_rows=None, seed=0):
+def extract_clean(raw_path, out_dir, limit=None, sample_rows=None, seed=0, design="stratified"):
     clean = Path(out_dir) / "arcos_clean.csv"
-    return clean, extract(str(raw_path), str(clean), limit=limit, sample_size=sample_rows, seed=seed)
+    return clean, extract(str(raw_path), str(clean), limit=limit, sample_size=sample_rows, seed=seed, design=design)
 
 
 def build_dataset(clean_csv, out_dir, seed, sample_per_drug, cycle=None, scale=1):

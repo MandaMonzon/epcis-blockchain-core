@@ -73,6 +73,10 @@ class LogisticDiversionContract extends Contract {
 
     async submitEvent(ctx, eventJsonStr) {
         const event = flattenLocations(parseEvent(eventJsonStr));
+        const existing = await ctx.stub.getState(STATE_KEY_PREFIX.EVENT + event.eventID);
+        if (existing && existing.length > 0) {
+            throw new Error(`Event already recorded and immutable: ${event.eventID}`);
+        }
         const result = await RuleEngine.evaluate(ctx, event);
 
         if (!result.accepted) {

@@ -68,6 +68,15 @@ describe('LogisticDiversionContract', () => {
         expect(stored.bizLocation).to.equal(SENDER);
     });
 
+    it('rejects a second event with the same eventID and keeps the first unchanged', async () => {
+        const [first] = lifecycle('dup', DESTINATION);
+        await contract.submitEvent(ctx, JSON.stringify(first));
+        const before = await contract.getEvent(ctx, first.eventID);
+        const error = await rejection(contract.submitEvent(ctx, JSON.stringify({ ...first, eventTime: '2025-01-01T00:00:00Z' })));
+        expect(error.message).to.include('immutable');
+        expect(await contract.getEvent(ctx, first.eventID)).to.equal(before);
+    });
+
     it('fails to read an event that was never submitted', async () => {
         const error = await rejection(contract.getEvent(ctx, 'urn:uuid:unknown'));
         expect(error.message.startsWith('Event not found')).to.equal(true);

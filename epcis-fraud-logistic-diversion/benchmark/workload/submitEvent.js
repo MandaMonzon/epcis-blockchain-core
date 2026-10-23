@@ -147,6 +147,7 @@ class SubmitEventWorkload extends WorkloadModuleBase {
         this.eventType   = eventType;
         this.roundIndex  = roundIndex;
         this.workerIndex = workerIndex;
+        this.runTag = `${Date.now()}-r${roundIndex}-w${workerIndex}`;
 
         if (this.events.length === 0) {
             throw new Error(`No events of type '${eventType}' found in ${eventsPath}`);
@@ -175,7 +176,9 @@ class SubmitEventWorkload extends WorkloadModuleBase {
     }
 
     async submitTransaction() {
-        const event = this.events[this.index % this.events.length];
+        const base = this.events[this.index % this.events.length];
+        const cycle = Math.floor(this.index / this.events.length);
+        const event = { ...base, eventID: `${base.eventID}#${this.runTag}-${cycle}` };
         this.index++;
 
         const request = {

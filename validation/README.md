@@ -21,3 +21,9 @@ One command (wipes the test-network ledger; refuses without `CONFIRM_WIPE=yes`):
 
 Item 20 validates `events.json` against the official GS1 EPCIS 2.0 JSON Schema. It needs `pip install jsonschema` and
 the schema (downloaded from github.com/gs1/EPCIS, or `--epcis-schema <file>`); without them it reports NOT RUN.
+
+## Unattended node003 run
+
+`scripts/overnight_node003.sh --start-at 10:00` runs the layers in order (generator, EPCIS events and the GS1 schema, contract, network) and always writes `~/overnight_<date>/SUMMARY.md`.
+The network layer only starts when no Caliper/benchmark process has been seen for 3 consecutive checks (10 min apart, up to `--network-deadline-hours`, default 6).
+It then runs `scripts/fabric_preflight.sh` (docker, disk, Fabric binaries, images, ports; pulls missing images and builds the Caliper image, never prunes), retries `down/up/deployCC` up to 3 times with container log diagnostics, runs item 19, and finishes with `scripts/caliper_smoke.sh` (5 transactions per Caliper round).

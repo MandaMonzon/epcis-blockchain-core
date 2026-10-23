@@ -52,3 +52,17 @@ def check_epcis_schema(events_path, work, schema_path=None):
     if errors:
         detail += f"; {len(errors)} schema errors: {summarise(errors)}"
     return data.result("20", NAME, not errors, detail)
+
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description=NAME)
+    parser.add_argument("events")
+    parser.add_argument("--work", default=".")
+    parser.add_argument("--schema")
+    args = parser.parse_args()
+    outcome = check_epcis_schema(args.events, args.work, args.schema)
+    print(json.dumps(outcome, indent=1))
+    sys.exit(0 if outcome["passed"] else 1)

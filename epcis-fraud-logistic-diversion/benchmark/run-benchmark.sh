@@ -4,11 +4,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
  
-FABRIC_NET="/home/monzonamanda/fabric-samples/test-network"
+FABRIC_NET="${FABRIC_NET:-/home/monzonamanda/fabric-samples/test-network}"
 ORG1_KEYSTORE="$FABRIC_NET/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore"
 CALIPER_IMAGE="caliper-fabric-bound:0.6.0"
  
-sudo chmod -R a+rX "$FABRIC_NET/organizations/peerOrganizations/" 2>/dev/null || true
+sudo -n chmod -R a+rX "$FABRIC_NET/organizations/peerOrganizations/" 2>/dev/null || true
  
 KEY_FILE=$(ls ${ORG1_KEYSTORE}/*_sk 2>/dev/null | head -n 1 | xargs basename)
  
@@ -95,6 +95,6 @@ docker run --rm \
   "$CALIPER_IMAGE" \
   launch manager \
     --caliper-workspace /caliper-workspace \
-    --caliper-benchconfig config.yaml \
+    --caliper-benchconfig "${BENCH_CONFIG:-config.yaml}" \
     --caliper-networkconfig network.yaml \
     --caliper-fabric-gateway-enabled

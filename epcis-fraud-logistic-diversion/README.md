@@ -69,9 +69,11 @@ The report pipeline (Excel / Word numbers) is in `../analysis_scripts/` (see its
   (`validation/shared_ledger_scores.js`): recall is 100% for every anomaly type when events are
   replayed in time order. With file order, `item_location_mismatch` drops to 11% (it needs the
   earlier commissioning event), so arrival order matters.
-- False positives on clean lots are 6.6% (time order), all from `SUPPLY_BASE_COMPLEXITY`: a buyer
-  that accumulates 9 or more distinct suppliers is flagged at buyer level, so clean lots at that buyer
-  are flagged too. This is the rule's design (Skilton 2024), not a lot-level error.
+- False positives on clean lots (time order, shared ledger) were 6.6% (and 12.5% on `recalled`), all from
+  `SUPPLY_BASE_COMPLEXITY`. Cause: the generator injected the extra suppliers of `many_suppliers` lots into a
+  buyer that other lots also used, so those lots inherited the buyer-level flag. The generator now gives each
+  `many_suppliers` lot its own synthetic buyer (`SX...`); after the fix the shared-ledger false positives are
+  0% on 8 seeds. A real buyer with 9 or more distinct suppliers is still flagged at buyer level by design (Skilton 2024).
 - The generated datasets inject about 71-77% anomalous transactions by construction. The figures measure
   detection against injected labels, not real-world fraud prevalence.
 

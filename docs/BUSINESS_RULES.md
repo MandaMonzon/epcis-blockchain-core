@@ -49,15 +49,15 @@ US buyer (real ARCOS/DEA transactions).
 - **When** the event is processed
 - **Then** `LOGISTICS_DIVERSION_JURISDICTION` (75) fires. GS1 prefixes 400-440 count as EU
 
-### 8. Quantity discrepancy (`quantity_discrepancy`)
+### 8. Quantity mismatch (`quantity_mismatch`)
 - **Given** a container packed with N units and unpacked with fewer than N * (1 - tolerance)
 - **When** the `AggregationEvent DELETE` is processed
-- **Then** `QUANTITY_DISCREPANCY` (75) fires. Current tolerance: 10% (no cited source; see open items)
+- **Then** `QUANTITY_MISMATCH` (75) fires. Current tolerance: 10% (no cited source; see open items)
 
-### 9. Unconfirmed shipment (`shipment_divergence`)
+### 9. Unconfirmed shipment (`shipment_receipt_mismatch`)
 - **Given** a `desadv` (despatch advice) without a `recadv` (receiving advice)
 - **When** the periodic audit runs more than `SHIPMENT_TRANSIT_DAYS_MAX` (30) days later
-- **Then** `SHIPMENT_DIVERGENCE` (70) fires
+- **Then** `SHIPMENT_RECEIPT_MISMATCH` (70) fires
 
 ### 10. Many suppliers (`many_suppliers`)
 - **Given** a buyer location whose `receiving`, `stocking` or `dispensing` events list 9 or more distinct parties in `sourceList` entries of type `possessing_party` or `owning_party` (accumulated over the events of that location; `location` entries are not parties) (99th percentile, Skilton et al. 2024)

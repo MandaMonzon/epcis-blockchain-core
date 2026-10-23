@@ -5,8 +5,8 @@ const LogisticsDiversionRule = require('./rules/LogisticsDiversionRule');
 const SupplyBaseComplexityRule = require('./rules/SupplyBaseComplexityRule');
 const VolumeFragmentationRule = require('./rules/VolumeFragmentationRule');
 const LotContaminationRule = require('./rules/LotContaminationRule');
-const QuantityDiscrepancyRule = require('./rules/QuantityDiscrepancyRule');
-const ShipmentReceiptDivergenceRule = require('./rules/ShipmentReceiptDivergenceRule');
+const QuantityMismatchRule = require('./rules/QuantityMismatchRule');
+const ShipmentReceiptMismatchRule = require('./rules/ShipmentReceiptMismatchRule');
 const TransitDiversionRule = require('./rules/TransitDiversionRule');
 const TransitTimeRule = require('./rules/TransitTimeRule');
 const LifecycleSequenceRule = require('./rules/LifecycleSequenceRule');
@@ -22,8 +22,8 @@ const SCORING_RULES = [
     new LogisticsDiversionRule(),
     new SupplyBaseComplexityRule(),
     new VolumeFragmentationRule(),
-    new QuantityDiscrepancyRule(),
-    new ShipmentReceiptDivergenceRule(),
+    new QuantityMismatchRule(),
+    new ShipmentReceiptMismatchRule(),
     new TransitDiversionRule(),
     new TransitTimeRule(),
     new LifecycleSequenceRule(),
@@ -35,8 +35,8 @@ const STATE_UPDATERS = [
     (ctx, event) => LogisticsDiversionRule.updateProductState(ctx, event),
     (ctx, event) => SupplyBaseComplexityRule.updateComplexityState(ctx, event),
     (ctx, event) => VolumeFragmentationRule.updateFragmentationState(ctx, event),
-    (ctx, event) => QuantityDiscrepancyRule.updateQuantityState(ctx, event),
-    (ctx, event) => ShipmentReceiptDivergenceRule.updateShipmentState(ctx, event),
+    (ctx, event) => QuantityMismatchRule.updateQuantityState(ctx, event),
+    (ctx, event) => ShipmentReceiptMismatchRule.updateShipmentState(ctx, event),
     (ctx, event) => TransitDiversionRule.updateTransitState(ctx, event),
     (ctx, event) => LifecycleSequenceRule.updateLifecycleState(ctx, event),
     (ctx, event, violations) => LotContaminationRule.updateLotRiskState(ctx, event, violations),

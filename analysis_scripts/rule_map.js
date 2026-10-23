@@ -6,7 +6,7 @@ const path = require('path');
 const core = path.join(__dirname, '..', 'epcis-fraud-logistic-diversion');
 const RuleEngine = require(path.join(core, 'chaincode/lib/RuleEngine'));
 const { makeCtx } = require(path.join(core, 'test/helpers'));
-const Shipment = require(path.join(core, 'chaincode/lib/rules/ShipmentReceiptDivergenceRule'));
+const Shipment = require(path.join(core, 'chaincode/lib/rules/ShipmentReceiptMismatchRule'));
 
 const dir = process.argv[2];
 if (!dir) {
@@ -37,7 +37,7 @@ async function firedRules(txEvents) {
   }
   const lastEvent = new Date(txEvents[txEvents.length - 1].eventTime).getTime();
   const pending = await Shipment.auditPendingShipments(ctx, new Date(lastEvent + 31 * 86400000));
-  if (pending.length) fired.SHIPMENT_DIVERGENCE_AUDIT = 70;
+  if (pending.length) fired.SHIPMENT_RECEIPT_MISMATCH_AUDIT = 70;
   return fired;
 }
 

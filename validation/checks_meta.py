@@ -41,8 +41,8 @@ def has_shrinkable_aggregation(lot):
 def sample_lots(groups, labels, wanted, per_type):
     pool = sorted(tx for tx in groups if labels[tx] == "none")
     used, chosen = set(), {}
-    for kind in sorted(wanted, key=lambda k: k != "quantity_discrepancy"):
-        eligible = [tx for tx in pool if tx not in used and (kind != "quantity_discrepancy" or has_shrinkable_aggregation(groups[tx]))]
+    for kind in sorted(wanted, key=lambda k: k != "quantity_mismatch"):
+        eligible = [tx for tx in pool if tx not in used and (kind != "quantity_mismatch" or has_shrinkable_aggregation(groups[tx]))]
         chosen[kind] = eligible[:per_type]
         used.update(chosen[kind])
     return {kind: chosen[kind] for kind in wanted}

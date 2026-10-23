@@ -4,7 +4,7 @@ const { Contract } = require('fabric-contract-api');
 const RuleEngine = require('./RuleEngine');
 const HistoryStore = require('./util/HistoryStore');
 const { STATE_KEY_PREFIX } = require('../constants/EpcisConstants');
-const ShipmentReceiptDivergenceRule = require('./rules/ShipmentReceiptDivergenceRule');
+const ShipmentReceiptMismatchRule = require('./rules/ShipmentReceiptMismatchRule');
 
 const RISK_BANDS = [
     { name: 'clean', upTo: 1 },
@@ -106,7 +106,7 @@ class LogisticDiversionContract extends Contract {
         }
 
         // A shipment with no later event for its lot is only caught by this proactive scan.
-        summary.pendingShipmentDivergences = await ShipmentReceiptDivergenceRule.auditPendingShipments(ctx);
+        summary.pendingShipmentMismatches = await ShipmentReceiptMismatchRule.auditPendingShipments(ctx);
 
         return JSON.stringify(summary);
     }

@@ -13,7 +13,7 @@ from .pipeline_runner import (CHAINCODE_DIR, ROOT, build_dataset, group_events, 
 
 THRESHOLD = 70
 ALL_TYPES = ["skip_commission", "out_of_order", "impossible_transit", "transit_diversion", "jurisdiction",
-             "quantity_discrepancy", "shipment_divergence", "many_suppliers", "item_location_mismatch"]
+             "quantity_mismatch", "shipment_receipt_mismatch", "many_suppliers", "item_location_mismatch"]
 
 
 def classify(labels, scores):
@@ -36,7 +36,7 @@ def compare_with_oracle(chaincode, oracle):
     flag_disagreements = [tx for tx in chaincode if chaincode[tx]["flagged"] != oracle[tx]["flagged"]]
     consistent_deciding, deciding = 0, 0
     only_chaincode, only_oracle = Counter(), Counter()
-    alias = {"SHIPMENT_DIVERGENCE_AUDIT": "SHIPMENT_DIVERGENCE"}
+    alias = {"SHIPMENT_RECEIPT_MISMATCH_AUDIT": "SHIPMENT_RECEIPT_MISMATCH"}
     for tx in chaincode:
         c, o = chaincode[tx], oracle[tx]
         cc_codes = Counter()

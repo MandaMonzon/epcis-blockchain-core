@@ -81,7 +81,7 @@ def check_conservation(groups, labels, scenario_csv, cap):
         if any(received[u] > shipped[u] for u in received):
             over_received.append(tx)
         expected = min(dosage[tx], cap)
-        if labels.get(tx) == "quantity_discrepancy":
+        if labels.get(tx) == "quantity_mismatch":
             expected = max(expected, 2)
         if len(shipped) != expected:
             wrong_units.append(tx)

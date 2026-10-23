@@ -123,13 +123,13 @@ class OracleTests(unittest.TestCase):
         return [add, delete]
 
     def test_quantity_positive(self):
-        self.assertIn("QUANTITY_DISCREPANCY", codes(run(self.pack(8))))
+        self.assertIn("QUANTITY_MISMATCH", codes(run(self.pack(8))))
 
     def test_quantity_boundary_negative(self):
-        self.assertNotIn("QUANTITY_DISCREPANCY", codes(run(self.pack(9))))
+        self.assertNotIn("QUANTITY_MISMATCH", codes(run(self.pack(9))))
 
     def test_quantity_full_negative(self):
-        self.assertNotIn("QUANTITY_DISCREPANCY", codes(run(self.pack(10))))
+        self.assertNotIn("QUANTITY_MISMATCH", codes(run(self.pack(10))))
 
     def advice(self, with_recadv):
         events = [ev("shipping", 0, ("u1",), EU_A, US_A,
@@ -141,7 +141,7 @@ class OracleTests(unittest.TestCase):
 
     def test_divergence_positive(self):
         tx = run(self.advice(False))
-        self.assertEqual(tx["audit_violations"], [{"code": "SHIPMENT_DIVERGENCE", "score": 70}])
+        self.assertEqual(tx["audit_violations"], [{"code": "SHIPMENT_RECEIPT_MISMATCH", "score": 70}])
         self.assertTrue(tx["flagged"])
 
     def test_divergence_negative(self):

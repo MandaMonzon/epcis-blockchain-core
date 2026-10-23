@@ -17,7 +17,7 @@
  * of the same drug — `cbvmda:lotNumber` is the correct semantic identifier
  * for "which manufacturing batch does this event belong to". Using
  * `transactionID` as the primary key would keep testing lot-level rules
- * (LotContaminationRule, ShipmentReceiptDivergenceRule) in a degenerate 1:1
+ * (LotContaminationRule, ShipmentReceiptMismatchRule) in a degenerate 1:1
  * mode where "lot" == "single shipment", never exercising true cross-shipment
  * contamination as intended by DSCSA 21 USC §360eee-1(c).
  *

@@ -23,7 +23,7 @@
  *    If childEPCs.length < savedCount * (1 - TOLERANCE), fire violation.
  *
  * TOLERANCE: 10% — allows for legitimate returns / in-transit damages.
- * Discrepancy > 10% is flagged as QUANTITY_DISCREPANCY.
+ * Discrepancy > 10% is flagged as QUANTITY_MISMATCH.
  *
  * REGULATORY BASIS
  * ----------------
@@ -38,18 +38,18 @@
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { locationId } = require('../util/locationId');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
-const { QUANTITY_DISCREPANCY }      = require('../../constants/RiskScoreConfig');
+const { QUANTITY_MISMATCH }      = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
 
 const QTY_KEY_PREFIX  = 'qty_add_';
 // Was hardcoded at 0.10 (10%), no source. Now centralized in
 // RuleThresholdsConfig.js — see that file for the sourced value (1%).
-const TOLERANCE       = RuleThresholdsConfig.QUANTITY_DISCREPANCY_TOLERANCE_PCT;
+const TOLERANCE       = RuleThresholdsConfig.QUANTITY_MISMATCH_TOLERANCE_PCT;
 
-class QuantityDiscrepancyRule extends TaxonomyRule {
+class QuantityMismatchRule extends TaxonomyRule {
     constructor() {
         super(
-            'QuantityDiscrepancyRule',
+            'QuantityMismatchRule',
             'Detects quantity mismatch between AggregationEvent ADD (packing) and DELETE (receiving)'
         );
     }
@@ -80,10 +80,10 @@ class QuantityDiscrepancyRule extends TaxonomyRule {
             const lossRate = (packedCount - arrivedCount) / packedCount;
             if (lossRate > TOLERANCE) {
                 return RuleResult.fail(
-                    ErrorCode.QUANTITY_DISCREPANCY,
+                    ErrorCode.QUANTITY_MISMATCH,
                     `SSCC ${sscc}: packed ${packedCount} units, only ${arrivedCount} arrived ` +
                     `(${(lossRate * 100).toFixed(1)}% loss — threshold ${TOLERANCE * 100}%)`,
-                    QUANTITY_DISCREPANCY,
+                    QUANTITY_MISMATCH,
                     { packedCount, arrivedCount, lossRate: Math.round(lossRate * 100) }
                 );
             }
@@ -114,4 +114,4 @@ class QuantityDiscrepancyRule extends TaxonomyRule {
     }
 }
 
-module.exports = QuantityDiscrepancyRule;
+module.exports = QuantityMismatchRule;

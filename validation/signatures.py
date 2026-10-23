@@ -7,7 +7,7 @@ QUANTITY_TOLERANCE = 0.9
 MANY_SUPPLIERS = 9
 PARTY_TYPES = ("possessing_party", "owning_party")
 TYPES = ("skip_commission", "out_of_order", "impossible_transit", "transit_diversion", "jurisdiction",
-         "quantity_discrepancy", "shipment_divergence", "many_suppliers", "item_location_mismatch", "recalled")
+         "quantity_mismatch", "shipment_receipt_mismatch", "many_suppliers", "item_location_mismatch", "recalled")
 
 
 def parse_time(value):
@@ -73,10 +73,10 @@ def signatures(lot):
     adds = [e for e in lot if e["type"] == "AggregationEvent" and e["action"] == "ADD"]
     deletes = [e for e in lot if e["type"] == "AggregationEvent" and e["action"] == "DELETE"]
     if adds and deletes and len(deletes[0]["childEPCs"]) < QUANTITY_TOLERANCE * len(adds[0]["childEPCs"]):
-        found.add("quantity_discrepancy")
+        found.add("quantity_mismatch")
     types = {b["type"] for e in lot for b in e.get("bizTransactionList", [])}
     if "urn:epcglobal:cbv:btt:desadv" in types and "urn:epcglobal:cbv:btt:recadv" not in types:
-        found.add("shipment_divergence")
+        found.add("shipment_receipt_mismatch")
     parties = {s["source"] for e in lot if e["bizStep"] == "receiving" for s in e.get("sourceList", [])
                if s.get("type") in PARTY_TYPES}
     if len(parties) >= MANY_SUPPLIERS:
@@ -129,14 +129,14 @@ def mutate_jurisdiction(lot):
     return lot + [event]
 
 
-def mutate_quantity_discrepancy(lot):
+def mutate_quantity_mismatch(lot):
     for e in lot:
         if e["type"] == "AggregationEvent" and e["action"] == "DELETE":
             e["childEPCs"] = e["childEPCs"][: max(1, int(len(e["childEPCs"]) * 0.7))]
     return lot
 
 
-def mutate_shipment_divergence(lot):
+def mutate_shipment_receipt_mismatch(lot):
     def is_receipt(e):
         return e["bizStep"] == "receiving"
     return [e for e in lot if not is_receipt(e)]
@@ -173,8 +173,8 @@ MUTATORS = {
     "impossible_transit": mutate_impossible_transit,
     "transit_diversion": mutate_transit_diversion,
     "jurisdiction": mutate_jurisdiction,
-    "quantity_discrepancy": mutate_quantity_discrepancy,
-    "shipment_divergence": mutate_shipment_divergence,
+    "quantity_mismatch": mutate_quantity_mismatch,
+    "shipment_receipt_mismatch": mutate_shipment_receipt_mismatch,
     "many_suppliers": mutate_many_suppliers,
     "item_location_mismatch": mutate_item_location_mismatch,
     "recalled": mutate_recalled,
@@ -186,14 +186,19 @@ EXPECTED_CODE = {
     "impossible_transit": "IMPOSSIBLE_TRANSIT_TIME",
     "transit_diversion": "TRANSIT_DIVERSION",
     "jurisdiction": "LOGISTICS_DIVERSION_JURISDICTION",
-    "quantity_discrepancy": "QUANTITY_DISCREPANCY",
-    "shipment_divergence": "SHIPMENT_DIVERGENCE",
+    "quantity_mismatch": "QUANTITY_MISMATCH",
+    "shipment_receipt_mismatch": "SHIPMENT_RECEIPT_MISMATCH",
     "many_suppliers": "SUPPLY_BASE_COMPLEXITY",
     "item_location_mismatch": "SKIPPED_LIFECYCLE_STEP",
     "recalled": None,
 }
 
-CODE_ALIASES = {"SHIPMENT_DIVERGENCE_AUDIT": "SHIPMENT_DIVERGENCE"}
+CODE_ALIASES = {
+    "SHIPMENT_RECEIPT_MISMATCH_AUDIT": "SHIPMENT_RECEIPT_MISMATCH",
+    "SHIPMENT_DIVERGENCE": "SHIPMENT_RECEIPT_MISMATCH",
+    "SHIPMENT_DIVERGENCE_AUDIT": "SHIPMENT_RECEIPT_MISMATCH",
+    "QUANTITY_DISCREPANCY": "QUANTITY_MISMATCH",
+}
 
 
 def canonical_code(code):

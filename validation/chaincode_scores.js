@@ -15,7 +15,9 @@ const threshold = Number(option('--threshold', 70));
 const AUDIT_DELAY_DAYS = 31;
 
 const RuleEngine = require(path.join(chaincodeDir, 'chaincode/lib/RuleEngine'));
-const Shipment = require(path.join(chaincodeDir, 'chaincode/lib/rules/ShipmentReceiptDivergenceRule'));
+const rulesDir = path.join(chaincodeDir, 'chaincode/lib/rules');
+const Shipment = require(path.join(rulesDir, fs.existsSync(path.join(rulesDir, 'ShipmentReceiptMismatchRule.js'))
+  ? 'ShipmentReceiptMismatchRule' : 'ShipmentReceiptDivergenceRule'));
 const { makeCtx } = require(path.join(chaincodeDir, 'test/helpers'));
 
 const transactionOf = event => String((event.ilmd && event.ilmd['cbvmda:transactionID']) || '').trim();
@@ -53,7 +55,7 @@ async function scoreTransaction(tx, entries) {
   }
   const last = new Date(ordered[ordered.length - 1].event.eventTime).getTime();
   const pending = await Shipment.auditPendingShipments(ctx, new Date(last + AUDIT_DELAY_DAYS * 86400000));
-  const auditViolations = pending.length > 0 ? [{ code: 'SHIPMENT_DIVERGENCE_AUDIT', score: threshold }] : [];
+  const auditViolations = pending.length > 0 ? [{ code: 'SHIPMENT_RECEIPT_MISMATCH_AUDIT', score: threshold }] : [];
   if (auditViolations.length) score = Math.max(score, threshold);
   return { transaction_id: tx, events, audit_violations: auditViolations, score, flagged: score >= threshold };
 }

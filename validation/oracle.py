@@ -18,8 +18,8 @@ DOCUMENTED_CODES = [
     "IMPOSSIBLE_TRANSIT_TIME",
     "TRANSIT_DIVERSION",
     "LOGISTICS_DIVERSION_JURISDICTION",
-    "QUANTITY_DISCREPANCY",
-    "SHIPMENT_DIVERGENCE",
+    "QUANTITY_MISMATCH",
+    "SHIPMENT_RECEIPT_MISMATCH",
     "SUPPLY_BASE_COMPLEXITY",
 ]
 
@@ -30,8 +30,8 @@ SCORES = {
     "IMPOSSIBLE_TRANSIT_TIME": 85,
     "TRANSIT_DIVERSION": 85,
     "LOGISTICS_DIVERSION_JURISDICTION": 75,
-    "QUANTITY_DISCREPANCY": 75,
-    "SHIPMENT_DIVERGENCE": 70,
+    "QUANTITY_MISMATCH": 75,
+    "SHIPMENT_RECEIPT_MISMATCH": 70,
 }
 
 
@@ -193,7 +193,7 @@ class TransactionState:
                 self.packed[parent] = len(children)
             elif event.get("action") == "DELETE" and parent in self.packed:
                 if len(children) < self.packed[parent] * (1 - QUANTITY_TOLERANCE):
-                    fire("QUANTITY_DISCREPANCY")
+                    fire("QUANTITY_MISMATCH")
 
         if step in SUPPLY_STEPS:
             location = event_location(event)
@@ -236,7 +236,7 @@ class TransactionState:
         audit_time = self.last_time + timedelta(days=AUDIT_DELAY_DAYS)
         for ref, sent in self.desadv.items():
             if ref not in self.recadv and audit_time - sent > timedelta(days=SHIPMENT_TRANSIT_DAYS_MAX):
-                return [{"code": "SHIPMENT_DIVERGENCE", "score": SCORES["SHIPMENT_DIVERGENCE"]}]
+                return [{"code": "SHIPMENT_RECEIPT_MISMATCH", "score": SCORES["SHIPMENT_RECEIPT_MISMATCH"]}]
         return []
 
 

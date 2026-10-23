@@ -90,20 +90,20 @@ const RiskScoreConfig = {
     // Score inherited from the original triggering violation (capped here).
     LOT_CONTAMINATION: 60,
 
-    // ── QuantityDiscrepancyRule ──────────────────────────────────────────────
+    // ── QuantityMismatchRule ──────────────────────────────────────────────
     // Units packed into container ≠ units unpacked at destination.
     // Loss rate > 10% triggers this score.
     // Positioned between FDA Class I and II — physical product loss is serious
     // but not immediately life-threatening compared to recalled product movement.
     // DSCSA 21 USC §360eee-1(b)(1)(D).
-    QUANTITY_DISCREPANCY: 75,
+    QUANTITY_MISMATCH: 75,
 
-    // ── ShipmentReceiptDivergenceRule ────────────────────────────────────────
+    // ── ShipmentReceiptMismatchRule ────────────────────────────────────────
     // Seller issued despatch advice (desadv) but buyer never confirmed receipt
     // (recadv) after the maximum expected transit window (30 days).
     // Equivalent to FDA Class II — possible diversion or cargo theft.
     // DSCSA 21 USC §360eee-1(c)(1).
-    SHIPMENT_DIVERGENCE: 70,
+    SHIPMENT_RECEIPT_MISMATCH: 70,
 
     // ── TransitDiversionRule ─────────────────────────────────────────────────
     // Product received at a location that does not match the declared destination

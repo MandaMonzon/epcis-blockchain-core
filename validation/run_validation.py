@@ -173,20 +173,23 @@ def main():
     print(f"extract: {extract_result['converted']} converted of {extract_result['rows_read']} rows", flush=True)
 
     per_seed = []
-    for seed in range(1, args.seeds + 1):
-        per_seed.append(build_seed(seed, clean_csv, work, args.sample_per_drug))
-        print(f"seed {seed}/{args.seeds} done", flush=True)
-
-    results = []
     cap = 10
     per_check = {"1": [], "2": [], "3": [], "4": [], "6": []}
-    for s in per_seed:
+    for seed in range(1, args.seeds + 1):
+        s = build_seed(seed, clean_csv, work, args.sample_per_drug)
         groups = group_events(s["events"])
         per_check["1"].append(data.check_unique_ids_and_quantities(s["events"], s["dataset"]["scenario"]))
         per_check["2"].append(data.check_date_order(groups, s["labels"]))
         per_check["3"].append(data.check_conservation(groups, s["labels"], s["dataset"]["scenario"], cap))
         per_check["4"].append(data.check_accounting(raw, extract_result, s["dataset"], s["events"]))
         per_check["6"].append(data.check_ground_truth(groups, s["labels"], ANOMALY_CYCLE, s["seed"]))
+        del groups
+        if seed != 1:
+            s["events"] = None
+        per_seed.append(s)
+        print(f"seed {seed}/{args.seeds} done", flush=True)
+
+    results = []
     for item, rs in per_check.items():
         results.append(aggregate(item, rs[0]["name"], rs))
     first = per_seed[0]

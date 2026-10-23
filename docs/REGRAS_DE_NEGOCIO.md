@@ -49,15 +49,15 @@ um comprador dos EUA (dados reais de transações do ARCOS/DEA).
 - **Quando** o evento é processado
 - **Então** `LOGISTICS_DIVERSION_JURISDICTION` (75) dispara. Prefixos GS1 400–440 contam como UE
 
-### 8. Divergência de quantidade (`quantity_discrepancy`)
+### 8. Quantidade inconsistente (`quantity_mismatch`)
 - **Dado** um contêiner empacotado com N unidades e desempacotado com menos de N·(1 − tolerância)
 - **Quando** o `AggregationEvent DELETE` é processado
-- **Então** `QUANTITY_DISCREPANCY` (75) dispara. Tolerância atual: 10% (sem fonte citada; ver pendências)
+- **Então** `QUANTITY_MISMATCH` (75) dispara. Tolerância atual: 10% (sem fonte citada; ver pendências)
 
-### 9. Remessa sem confirmação (`shipment_divergence`)
+### 9. Remessa sem confirmação (`shipment_receipt_mismatch`)
 - **Dado** um `desadv` (aviso de expedição) sem `recadv` (confirmação de recebimento)
 - **Quando** a auditoria periódica roda mais de `SHIPMENT_TRANSIT_DAYS_MAX` (30) dias depois
-- **Então** `SHIPMENT_DIVERGENCE` (70) dispara
+- **Então** `SHIPMENT_RECEIPT_MISMATCH` (70) dispara
 
 ### 10. Muitos fornecedores (`many_suppliers`)
 - **Dado** um local comprador cujos eventos `receiving`, `stocking` ou `dispensing` listam 9 ou mais partes distintas em entradas de `sourceList` do tipo `possessing_party` ou `owning_party` (acumuladas nos eventos desse local; entradas `location` não são partes) (percentil 99, Skilton et al. 2024)

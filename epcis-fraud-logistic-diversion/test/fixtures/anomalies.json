@@ -18241,7 +18241,7 @@
       }
     ]
   },
-  "quantity_discrepancy": {
+  "quantity_mismatch": {
     "transactionId": "56229.0",
     "events": [
       {
@@ -20474,7 +20474,7 @@
       }
     ]
   },
-  "shipment_divergence": {
+  "shipment_receipt_mismatch": {
     "transactionId": "805007139.0",
     "events": [
       {

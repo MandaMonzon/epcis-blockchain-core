@@ -4,9 +4,9 @@
 const assert     = require('assert');
 
 const RuleEngine = require('../chaincode/lib/RuleEngine');
-const ShipmentReceiptDivergenceRule = require('../chaincode/lib/rules/ShipmentReceiptDivergenceRule');
+const ShipmentReceiptMismatchRule = require('../chaincode/lib/rules/ShipmentReceiptMismatchRule');
 
-const AUDIT_TYPES = new Set(['shipment_divergence']);
+const AUDIT_TYPES = new Set(['shipment_receipt_mismatch']);
 const AUDIT_DELAY_DAYS = 31;
 
 const { makeCtx } = require('./helpers');
@@ -36,7 +36,7 @@ async function replayTransaction(events) {
 
     const last = events.reduce((t, e) => Math.max(t, new Date(e.eventTime).getTime()), 0);
 
-    const pending = await ShipmentReceiptDivergenceRule.auditPendingShipments(ctx, new Date(last + AUDIT_DELAY_DAYS * 86400000));
+    const pending = await ShipmentReceiptMismatchRule.auditPendingShipments(ctx, new Date(last + AUDIT_DELAY_DAYS * 86400000));
 
     return { maxScore, fired: [...fired], pending };
 

@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const RuleEngine = require('./chaincode/lib/RuleEngine');
 const { makeCtx } = require('./test/helpers');
-const Shipment = require('./chaincode/lib/rules/ShipmentReceiptDivergenceRule');
+const Shipment = require('./chaincode/lib/rules/ShipmentReceiptMismatchRule');
 
 const THRESHOLD = 70;
 const NEGATIVES = new Set(['none', 'recalled']);

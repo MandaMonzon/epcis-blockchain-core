@@ -9,7 +9,7 @@
 
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
-const { SHIPMENT_DIVERGENCE }       = require('../../constants/RiskScoreConfig');
+const { SHIPMENT_RECEIPT_MISMATCH }       = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
 const { extractLotId }              = require('../util/LotIdentifier');
 
@@ -17,10 +17,10 @@ const SHIP_DIV_KEY      = 'ship_div_';
 // The 30-day deadline had no legal source; the window is configurable for sensitivity runs.
 const TRANSIT_DAYS_MAX  = RuleThresholdsConfig.SHIPMENT_TRANSIT_DAYS_MAX;
 
-class ShipmentReceiptDivergenceRule extends TaxonomyRule {
+class ShipmentReceiptMismatchRule extends TaxonomyRule {
     constructor() {
         super(
-            'ShipmentReceiptDivergenceRule',
+            'ShipmentReceiptMismatchRule',
             'Detects missing receiving confirmation after a despatch advice was issued (TransactionEvent desadv without recadv)'
         );
     }
@@ -66,10 +66,10 @@ class ShipmentReceiptDivergenceRule extends TaxonomyRule {
 
             if (daysDiff > TRANSIT_DAYS_MAX) {
                 return RuleResult.fail(
-                    ErrorCode.SHIPMENT_DIVERGENCE,
+                    ErrorCode.SHIPMENT_RECEIPT_MISMATCH,
                     `Lot '${txnId}' was shipped (desadv at ${state.shipTime}) but no receiving ` +
                     `confirmation (recadv) after ${Math.round(daysDiff)} days — possible cargo theft or diversion`,
-                    SHIPMENT_DIVERGENCE,
+                    SHIPMENT_RECEIPT_MISMATCH,
                     { daysSinceShipment: Math.round(daysDiff), destination: state.destination }
                 );
             }
@@ -145,4 +145,4 @@ function extractDestination(event) {
     return loc ? (loc.destination || '') : '';
 }
 
-module.exports = ShipmentReceiptDivergenceRule;
+module.exports = ShipmentReceiptMismatchRule;

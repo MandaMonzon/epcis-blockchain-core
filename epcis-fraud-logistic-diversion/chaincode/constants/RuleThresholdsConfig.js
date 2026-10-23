@@ -17,7 +17,7 @@
  * in one place instead of scattered across 7 files.
  *
  * @typedef {Object} RuleThresholds
- * @property {number} quantityDiscrepancyTolerancePct  - B3: max acceptable loss rate (0-1)
+ * @property {number} quantityMismatchTolerancePct  - B3: max acceptable loss rate (0-1)
  * @property {number} shipmentTransitDaysMax           - B4: days before missing recadv is flagged
  * @property {number} volumeFragmentationWindowDays    - B7: rolling window for order counting
  * @property {{min:number, label:string}[]} volumeFragmentationFixedThresholds - B7: legacy fixed limits
@@ -27,7 +27,7 @@
 /** @type {RuleThresholds} */
 const RuleThresholdsConfig = Object.freeze({
 
-    // ── B3 — QuantityDiscrepancyRule ────────────────────────────────────────
+    // ── B3 — QuantityMismatchRule ────────────────────────────────────────
     // Original value: 0.10 (10%), no cited source (flagged in
     // Relatorio_Fontes_Blockchain.docx as "A DEFINIR O PORQUÊ").
     // MANTIDO EM 0.10 — não alterei o comportamento, só centralizei o valor
@@ -37,9 +37,9 @@ const RuleThresholdsConfig = Object.freeze({
     // isso sozinho.
     // TODO(pesquisa): re-run comparando 0.10 vs 0.01 e ver quantas
     // transações mudam de classificação (ver seção de análise no relatório).
-    QUANTITY_DISCREPANCY_TOLERANCE_PCT: 0.10,
+    QUANTITY_MISMATCH_TOLERANCE_PCT: 0.10,
 
-    // ── B4 — ShipmentReceiptDivergenceRule ──────────────────────────────────
+    // ── B4 — ShipmentReceiptMismatchRule ──────────────────────────────────
     // Original value: 30 days, no cited source (flagged in
     // Relatorio_Fontes_Blockchain.docx: "não existe prazo de 30 dias na lei;
     // prática real recomenda resolver em poucos dias"). No exact number is

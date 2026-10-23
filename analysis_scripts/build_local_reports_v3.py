@@ -281,11 +281,11 @@ _LOTE_DATA = None
 RULE_LABELS = {
     "LogisticsDiversionRule": "Desvio de Rota",
     "LotContaminationRule": "Contaminação de Lote",
-    "ShipmentReceiptDivergenceRule": "Divergência Envio/Recebimento",
+    "ShipmentReceiptMismatchRule": "Divergência Envio/Recebimento",
     "VolumeFragmentationRule": "Fragmentação de Volume",
     "TransitDiversionRule": "Desvio em Trânsito",
     "SupplyBaseComplexityRule": "Complexidade de Fornecedores",
-    "QuantityDiscrepancyRule": "Divergência de Quantidade",
+    "QuantityMismatchRule": "Divergência de Quantidade",
     "MandatoryFieldsRule": "Campos Obrigatórios Ausentes",
 }
 

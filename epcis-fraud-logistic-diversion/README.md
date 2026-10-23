@@ -17,8 +17,8 @@ EPCIS 2.0 Event (JSON)
   +- LogisticsDiversionRule      -> invalid sequence, timing, jurisdiction
   +- SupplyBaseComplexityRule    -> many distinct suppliers per buyer (Skilton et al. 2024)
   +- VolumeFragmentationRule     -> fragmented orders from one source in 30 days
-  +- QuantityDiscrepancyRule     -> packed count != received count
-  +- ShipmentReceiptDivergenceRule -> despatch advice without receiving advice (needs audit call)
+  +- QuantityMismatchRule     -> packed count != received count
+  +- ShipmentReceiptMismatchRule -> despatch advice without receiving advice (needs audit call)
   +- TransitDiversionRule        -> received at a location other than the declared destination
   +- TransitTimeRule             -> physically impossible transit time
   +- LifecycleSequenceRule       -> received without commissioning/packing/shipping
@@ -43,8 +43,8 @@ All values live in `chaincode/constants/RiskScoreConfig.js` and `RuleThresholdsC
 | LifecycleSequenceRule | Received without earlier lifecycle step | 75 |
 | SupplyBaseComplexityRule | >= 9 / 6-8 / 4-5 suppliers | 85 / 60 / 30 |
 | VolumeFragmentationRule | high / elevated fragmentation | 60 / 30 |
-| QuantityDiscrepancyRule | Packed != received | 75 |
-| ShipmentReceiptDivergenceRule | No receiving confirmation after 30 days | 70 |
+| QuantityMismatchRule | Packed != received | 75 |
+| ShipmentReceiptMismatchRule | No receiving confirmation after 30 days | 70 |
 | TransitDiversionRule | Received at undeclared location | 85 |
 | LotContaminationRule | Lot already contaminated | 60 |
 
@@ -65,10 +65,15 @@ The report pipeline (Excel / Word numbers) is in `../analysis_scripts/` (see its
 
 ## Known limitations
 
-- `jurisdiction`, `item_location_mismatch` and `shipment_divergence` are **not detected** at threshold 70
-  (marked "lacuna conhecida" in `test/anomalyDetection.test.js`).
-- The generated datasets inject about 77% anomalous transactions. The figures measure detection
-  against injected labels, not real-world fraud prevalence.
+- Scores below were measured on synthetic data with all lots replayed on ONE shared ledger
+  (`validation/shared_ledger_scores.js`): recall is 100% for every anomaly type when events are
+  replayed in time order. With file order, `item_location_mismatch` drops to 11% (it needs the
+  earlier commissioning event), so arrival order matters.
+- False positives on clean lots are 6.6% (time order), all from `SUPPLY_BASE_COMPLEXITY`: a buyer
+  that accumulates 9 or more distinct suppliers is flagged at buyer level, so clean lots at that buyer
+  are flagged too. This is the rule's design (Skilton 2024), not a lot-level error.
+- The generated datasets inject about 71-77% anomalous transactions by construction. The figures measure
+  detection against injected labels, not real-world fraud prevalence.
 
 ## References
 

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from . import checks_data as data
 from . import checks_meta as meta
+from . import checks_schema as schema_check
 from . import checks_stats as st
 from . import stats
 from .pipeline_runner import (GENERATOR, ROOT, build_dataset, extract_clean, group_events, load_events, read_labels,
@@ -154,6 +155,7 @@ def main():
     parser.add_argument("--raw")
     parser.add_argument("--limit", type=int, help="first N rows of the raw file (NOT a random sample)")
     parser.add_argument("--sample-rows", type=int, help="uniform random sample of N valid rows over the whole raw file")
+    parser.add_argument("--epcis-schema", help="local copy of the GS1 EPCIS-JSON-Schema.json (downloaded when omitted)")
     parser.add_argument("--sample-seed", type=int, default=0)
     parser.add_argument("--sample-design", choices=("stratified", "simple"), default="stratified")
     parser.add_argument("--sample-per-drug", type=int, default=10)
@@ -233,6 +235,7 @@ def main():
     results.append(st.check_confusion_sums(per_seed, work))
     network_result, harness = network_equivalence(per_seed, work, args.network_results)
     results.append(network_result)
+    results.append(schema_check.check_epcis_schema(per_seed[0]["events_path"], work, args.epcis_schema))
 
     header = [f"- Generated: {time.strftime('%Y-%m-%d %H:%M:%S')} (run time {time.time() - started:.0f}s)",
               f"- Core commit: `{git_head(ROOT)}`; generator commit: `{git_head(GENERATOR)}`",

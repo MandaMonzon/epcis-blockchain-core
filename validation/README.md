@@ -1,6 +1,6 @@
 # Validation
 
-`make validate` runs items 1-18 and writes `validation/REPORT.md`
+`make validate` runs items 1-20 and writes `validation/REPORT.md`
 (`VALIDATE_ARGS="--seeds 30 --raw <arcos.gz>"`).
 
 On the real ARCOS use a random sample, not `--limit` (which only reads the first rows):
@@ -18,3 +18,6 @@ Item 19 (Fabric network vs local evaluator), on a fresh ledger:
 One command (wipes the test-network ledger; refuses without `CONFIRM_WIPE=yes`):
 
     CONFIRM_WIPE=yes scripts/network_equivalence.sh <dataset dir with events.json and scenario_template.csv>
+
+Item 20 validates `events.json` against the official GS1 EPCIS 2.0 JSON Schema. It needs `pip install jsonschema` and
+the schema (downloaded from github.com/gs1/EPCIS, or `--epcis-schema <file>`); without them it reports NOT RUN.

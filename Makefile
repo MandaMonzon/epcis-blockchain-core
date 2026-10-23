@@ -39,5 +39,5 @@ audit:
 	python3 analysis_scripts/audit_arcos.py $${ARCOS_CSV:-../epcis-arcos-etl-generator/output/arcos_clean.csv}
 
 validate:
-	python3 -m unittest validation.test_stats validation.test_negative_controls validation.test_oracle
+	python3 -m unittest validation.test_stats validation.test_negative_controls validation.test_oracle validation.test_schema_check
 	python3 -m validation.run_validation $(VALIDATE_ARGS)

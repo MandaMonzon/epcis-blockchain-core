@@ -67,9 +67,21 @@ read OBJ AGG TXN <<< "$COUNTS_OUTPUT"
  
 echo "Contagem real de eventos -> ObjectEvent=$OBJ AggregationEvent=$AGG TransactionEvent=$TXN"
  
-sed -e "s/__OBJ_TX__/$OBJ/" -e "s/__AGG_TX__/$AGG/" -e "s/__TXN_TX__/$TXN/" "$BENCH_DIR/config.template.yaml" > "$BENCH_DIR/config.yaml"
+RUN_ID="${RUN_ID:-run_$(date +%Y%m%d_%H%M%S)}"
+READ_TX="${READ_TX:-1000}"
+READ_TPS="${READ_TPS:-50}"
+SUMMARY_TX="${SUMMARY_TX:-10}"
+LIN_TX="${LIN_TX:-2000}"
+LIN_START="${LIN_START:-10}"
+LIN_END="${LIN_END:-100}"
+echo "$RUN_ID" > "$BENCH_DIR/.last_run_id"
+sed -e "s/__OBJ_TX__/$OBJ/" -e "s/__AGG_TX__/$AGG/" -e "s/__TXN_TX__/$TXN/" \
+    -e "s/__RUN_ID__/$RUN_ID/g" -e "s/__READ_TX__/$READ_TX/g" -e "s/__READ_TPS__/$READ_TPS/g" \
+    -e "s/__SUMMARY_TX__/$SUMMARY_TX/" -e "s/__LIN_TX__/$LIN_TX/" \
+    -e "s/__LIN_START__/$LIN_START/" -e "s/__LIN_END__/$LIN_END/" \
+    "$BENCH_DIR/config.template.yaml" > "$BENCH_DIR/config.yaml"
  
-if grep -q "__OBJ_TX__\|__AGG_TX__\|__TXN_TX__" "$BENCH_DIR/config.yaml" 2>/dev/null; then
+if grep -q "__[A-Z_]*__" "$BENCH_DIR/config.yaml" 2>/dev/null; then
 
   echo "Erro: config.yaml ainda tem placeholders nao substituidos - algo falhou no sed"
 

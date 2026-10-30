@@ -23,6 +23,7 @@ test:
         arguments:
           contractId: logistic-diversion
           channelName: mychannel
+          runId: __RUN_ID__
           eventType: ObjectEvent
           eventsFile: /epcis-output/events.json
 
@@ -38,6 +39,7 @@ test:
         arguments:
           contractId: logistic-diversion
           channelName: mychannel
+          runId: __RUN_ID__
           eventType: AggregationEvent
           eventsFile: /epcis-output/events.json
 
@@ -53,5 +55,81 @@ test:
         arguments:
           contractId: logistic-diversion
           channelName: mychannel
+          runId: __RUN_ID__
           eventType: TransactionEvent
           eventsFile: /epcis-output/events.json
+
+    - label: getEvent
+      description: Read one committed event by id
+      txNumber: __READ_TX__
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: __READ_TPS__
+      workload:
+        module: workload/queryEvent.js
+        arguments: &query
+          contractId: logistic-diversion
+          channelName: mychannel
+          runId: __RUN_ID__
+          label: getEvent
+          queryFunction: getEvent
+
+    - label: getProductState
+      description: Read the latest state of an EPC
+      txNumber: __READ_TX__
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: __READ_TPS__
+      workload:
+        module: workload/queryEvent.js
+        arguments:
+          <<: *query
+          label: getProductState
+          queryFunction: getProductState
+
+    - label: getAuditSummary
+      description: Full scan of the audit records (range query)
+      txNumber: __SUMMARY_TX__
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 1
+      workload:
+        module: workload/queryEvent.js
+        arguments:
+          <<: *query
+          label: getAuditSummary
+          queryFunction: getAuditSummary
+
+    - label: stressLinearRate
+      description: >
+        Ramp the submit rate to locate the MVCC/timeout breaking point.
+        Events are resubmitted under fresh ids, so this round adds state.
+      txNumber: __LIN_TX__
+      rateControl:
+        type: linear-rate
+        opts:
+          startingTps: __LIN_START__
+          finishingTps: __LIN_END__
+      workload:
+        module: workload/submitEvent.js
+        arguments:
+          contractId: logistic-diversion
+          channelName: mychannel
+          runId: __RUN_ID__
+          label: stressLinearRate
+          eventType: ObjectEvent
+          eventsFile: /epcis-output/events.json
+          maxRetries: 0
+
+monitors:
+  resource:
+    - module: docker
+      options:
+        interval: 5
+        containers:
+          - peer0.org1.example.com
+          - peer0.org2.example.com
+          - orderer.example.com

@@ -5,9 +5,11 @@ caliper:
   blockchain: fabric
 
 info:
-  Version: 2.5.0
+  Version: 2.5.9
   Size: 2 orgs, 1 peer each
-  Orderer: Solo
+  Orderer: etcdraft, single node
+  BatchTimeout: 2s
+  MaxMessageCount: 10
   Distribution: Single Host
   StateDB: GoLevelDB
 

@@ -59,7 +59,7 @@ const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 const fs   = require('fs');
 const path = require('path');
 
-const ROUND_SCORES_DIR = path.resolve(__dirname, '..', 'output', 'round_scores');
+const OUTPUT_ROOT = path.resolve(__dirname, '..', 'output');
 
 /**
  * Best-effort extraction of the chaincode's JSON return value from a Caliper
@@ -120,6 +120,12 @@ function isRetryableError(err) {
     return RETRYABLE_PATTERNS.some(pattern => msg.includes(pattern));
 }
 
+// A Class A rule rejects the event by design; that is not a system failure.
+function isDesignRejection(err) {
+    const msg = (err && (err.message || err.toString())) || '';
+    return msg.includes('"rejected":true');
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -165,11 +171,11 @@ class SubmitEventWorkload extends WorkloadModuleBase {
         // One append-only file per (round, eventType, worker) — streamed, not
         // buffered in memory. See module docstring for the "per-round score
         // capture" rationale.
-        fs.mkdirSync(ROUND_SCORES_DIR, { recursive: true });
-        const scoreFilePath = path.join(
-            ROUND_SCORES_DIR,
-            `r${roundIndex}_${eventType}_w${workerIndex}.jsonl`
-        );
+        const runDir = path.join(OUTPUT_ROOT, roundArguments.runId || '');
+        const scoresDir = path.join(runDir, 'round_scores');
+        fs.mkdirSync(scoresDir, { recursive: true });
+        this.committedPath = path.join(runDir, 'committed.jsonl');
+        const scoreFilePath = path.join(scoresDir, `r${roundIndex}_${roundArguments.label || eventType}_w${workerIndex}.jsonl`);
         this.scoreStream = fs.createWriteStream(scoreFilePath, { flags: 'a' });
 
         console.log(`Worker ${workerIndex}: ${this.events.length} ${eventType} events loaded`);
@@ -193,15 +199,17 @@ class SubmitEventWorkload extends WorkloadModuleBase {
         const retryDelayMs = this.roundArguments.retryDelayMs ?? 50;
 
         let attempt = 0;
+        const startedAt = Date.now();
         while (true) {
             try {
                 const results = await this.sutAdapter.sendRequests(request);
-                this._recordScore(event, results, true);
+                this._recordScore(event, results, 'committed', Date.now() - startedAt, attempt);
                 return;
             } catch (err) {
                 const canRetry = attempt < maxRetries && isRetryableError(err);
                 if (!canRetry) {
-                    this._recordScore(event, null, false);
+                    const outcome = isDesignRejection(err) ? 'rejected' : 'error';
+                    this._recordScore(event, null, outcome, Date.now() - startedAt, attempt);
                     throw err;
                 }
                 attempt++;
@@ -225,7 +233,7 @@ class SubmitEventWorkload extends WorkloadModuleBase {
      * list of Class B rules that fired for this event, each with its own
      * score contribution — closes the "rule attribution" gap (2026-09-24).
      */
-    _recordScore(event, results, txSuccess) {
+    _recordScore(event, results, outcome, latencyMs, retries) {
         if (!this.scoreStream) return;
         try {
             const txStatus = Array.isArray(results) ? results[0] : results;
@@ -240,10 +248,20 @@ class SubmitEventWorkload extends WorkloadModuleBase {
                 epc:        Array.isArray(event.epcList) ? (event.epcList[0] || null) : null,
                 riskScore:  chaincodeResult ? (chaincodeResult.riskScore ?? null) : null,
                 triggeredRules,
-                txSuccess,
+                outcome,
+                txSuccess:  outcome === 'committed',
+                latencyMs,
+                retries,
                 ts:         Date.now(),
             });
             this.scoreStream.write(line + '\n');
+            if (outcome === 'committed') {
+                fs.appendFileSync(this.committedPath, JSON.stringify({
+                    eventID: event.eventID,
+                    type: event.type,
+                    epc: Array.isArray(event.epcList) ? (event.epcList[0] || null) : null,
+                }) + '\n');
+            }
         } catch (_err) {
             // best-effort only — see docstring
         }

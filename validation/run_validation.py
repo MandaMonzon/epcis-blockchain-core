@@ -14,6 +14,7 @@ from . import checks_data as data
 from . import checks_meta as meta
 from . import checks_schema as schema_check
 from . import checks_stats as st
+from . import per_drug_sla
 from . import stats
 from .pipeline_runner import (GENERATOR, ROOT, build_dataset, extract_clean, group_events, load_events, read_labels,
                               score_with_chaincode, score_with_oracle, transaction_of as transaction_of_event)
@@ -45,8 +46,11 @@ def build_seed(seed, clean_csv, work, sample_per_drug):
     labels = read_labels(dataset["scenario"])
     chaincode = score_with_chaincode(dataset["events"], out / "chaincode_scores.json")
     oracle = score_with_oracle(dataset["events"], out / "oracle_scores.json")
+    rows = st.classify(labels, chaincode)
+    per_drug = per_drug_sla.per_drug_table(rows, per_drug_sla.read_drugs(dataset["scenario"]))
+    per_drug_sla.write_tsv(per_drug, out / "per_drug_sla.tsv")
     return {"seed": seed, "dir": out, "dataset": dataset, "events_path": dataset["events"], "events": events,
-            "labels": labels, "chaincode": chaincode, "oracle": oracle, "rows": st.classify(labels, chaincode)}
+            "labels": labels, "chaincode": chaincode, "oracle": oracle, "rows": rows, "per_drug": per_drug}
 
 
 def network_equivalence(per_seed, work, network_results):
@@ -102,6 +106,12 @@ def write_report(path, header, results, rows, matrix, ppv_table, prevalence_runs
     lines += ["", f"Pooled over all seeds: TP={tp} FN={fn} FP={fp} TN={tn} (sum {tp + fn + fp + tn} = {len(pooled_rows)} transactions). "
               f"Recall {stats.fmt_ci(tp, tp + fn)}; FPR {stats.fmt_ci(fp, fp + tn)}; precision {stats.fmt_ci(tp, tp + fp)}; F1 {f1:.4f}. "
               "The dataset prevalence is about 71% by construction (10 of 14 cycle positions), `recalled` lots are normal.", ""]
+    lines += ["## Drugs passing the 90% cut-off, per round", "",
+              "A drug passes a round when at least 90% of its anomalous transactions are flagged (score >= 70). Each seed is one round. "
+              "`Wilson lower >= 90%` is the stricter reading: the 95% interval of the drug's detection rate stays above the cut-off. "
+              "Drugs without anomalous transactions are not evaluable. False positives per drug are in `per_drug_sla.tsv` of each seed.", ""]
+    lines += per_drug_sla.rounds_summary([(f"seed {s['seed']}", s["per_drug"]) for s in per_seed])
+    lines += [""]
     lines += ["## PPV by prevalence (item 15)", "",
               "PPV = recall·p / (recall·p + FPR·(1−p)). `Lower bound` uses the upper Wilson limit of the FPR. "
               "`Resampled` is the mean PPV over 300 datasets of 1000 lots drawn from the pooled lots at prevalence p. "

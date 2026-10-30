@@ -97,8 +97,8 @@ step epcis_schema     bash -c "cd '$CORE' && python3 -m validation.checks_schema
 # Layer 3 - smart contract
 step contract_tests   bash -c "cd '$CORE' && make test"
 step validate_real    bash -c "cd '$CORE' && $LOW make validate VALIDATE_ARGS=\"--seeds ${SEEDS:-30} --raw '$RAW' --sample-rows $SAMPLE_ROWS --sample-seed 1 --work '$RUN/validate_work' --report '$RUN/REPORT_real.md'\""
-step shared_ledger_time bash -c "cd '$CORE' && $LOW node validation/shared_ledger_scores.js '$RUN/validate_work/seed_1' --order time"
-step shared_ledger_file bash -c "cd '$CORE' && $LOW node validation/shared_ledger_scores.js '$RUN/validate_work/seed_1' --order file"
+step shared_ledger_time bash -c "cd '$CORE' && NODE_OPTIONS=--max-old-space-size=8192 $LOW node validation/shared_ledger_scores.js '$RUN/validate_work/seed_1' --order time"
+step shared_ledger_file bash -c "cd '$CORE' && NODE_OPTIONS=--max-old-space-size=8192 $LOW node validation/shared_ledger_scores.js '$RUN/validate_work/seed_1' --order file"
 
 # Layer 4 - Fabric network (wipes the test-network ledger; only when nobody is using it)
 if grep -q "contract_tests.*FAIL" "$SUMMARY"; then

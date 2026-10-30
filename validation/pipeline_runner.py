@@ -72,7 +72,10 @@ def score_with_chaincode(events_path, out_path, chaincode_dir=None):
     command = ["node", str(ROOT / "validation" / "chaincode_scores.js"), str(events_path), str(out_path)]
     if chaincode_dir:
         command += ["--chaincode", str(chaincode_dir)]
-    subprocess.run(command, check=True, capture_output=True, text=True)
+    env = {**os.environ, "NODE_OPTIONS": os.environ.get("NODE_OPTIONS") or "--max-old-space-size=8192"}
+    run = subprocess.run(command, capture_output=True, text=True, env=env)
+    if run.returncode:
+        raise RuntimeError(f"chaincode_scores.js failed ({run.returncode}): {run.stderr[-1500:]}")
     return {t["transaction_id"]: t for t in json.loads(Path(out_path).read_text())["transactions"]}
 
 

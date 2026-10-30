@@ -3,6 +3,7 @@
 // Usage: node chaincode_scores.js <events.json> <out.json> [--chaincode <dir>] [--threshold 70]
 const fs = require('fs');
 const path = require('path');
+const { readEvents } = require('./read_events');
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -61,7 +62,7 @@ async function scoreTransaction(tx, entries) {
 }
 
 (async () => {
-  const events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')).epcisBody.eventList;
+  const events = readEvents(eventsFile);
   const transactions = [];
   for (const [tx, entries] of groupByTransaction(events)) transactions.push(await scoreTransaction(tx, entries));
   fs.writeFileSync(outFile, JSON.stringify({ threshold, transactions }));

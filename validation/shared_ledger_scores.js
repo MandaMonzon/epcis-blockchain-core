@@ -3,6 +3,7 @@
 // Usage: node shared_ledger_scores.js <dataset dir> [--order time|file] [--threshold 70] [--out result.json]
 const fs = require('fs');
 const path = require('path');
+const { readEvents } = require('./read_events');
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -42,7 +43,7 @@ function readLabels() {
 }
 
 (async () => {
-  const events = JSON.parse(fs.readFileSync(path.join(datasetDir, 'events.json'), 'utf8')).epcisBody.eventList;
+  const events = readEvents(path.join(datasetDir, 'events.json'));
   const entries = events.map((event, arrival) => ({ event, arrival }));
   if (order === 'time') {
     entries.sort((a, b) => new Date(a.event.eventTime) - new Date(b.event.eventTime) || a.arrival - b.arrival);

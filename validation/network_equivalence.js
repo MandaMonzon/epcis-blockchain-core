@@ -8,6 +8,7 @@
 // which is what the network does. `submit` needs a freshly deployed chaincode (empty ledger) and the
 // environment of fabric-samples/test-network: FABRIC_NET, and optionally CHAINCODE_NAME and CHANNEL_NAME.
 const fs = require('fs');
+const { readEvents } = require('./read_events');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -52,7 +53,7 @@ function prepare(datasetDir, out) {
       taken[type]++;
     }
   }
-  const events = read(path.join(datasetDir, 'events.json')).epcisBody.eventList
+  const events = readEvents(path.join(datasetDir, 'events.json'))
     .map((event, arrival) => ({ event, arrival }))
     .filter(({ event }) => chosen.has(transactionOf(event)))
     .sort((a, b) => new Date(a.event.eventTime) - new Date(b.event.eventTime) || a.arrival - b.arrival)

@@ -3,16 +3,21 @@
 # Waits for --start-at, never touches the Fabric network while a Caliper/benchmark process is running,
 # and writes everything under ~/overnight_<date>/ (read SUMMARY.md first).
 #
+# The whole run stops by itself after --max-hours (default 5): the running step is killed (its whole process group)
+# and the remaining steps are recorded as SKIPPED(time limit). The clock starts after --start-at.
+#
 # Usage (on node003):
-#   nohup setsid scripts/overnight_node003.sh --start-at 10:00 > ~/overnight.out 2>&1 &
+#   nohup setsid scripts/overnight_node003.sh --start-at 10:00 --max-hours 5 > ~/overnight.out 2>&1 &
 set -uo pipefail
 
 START_AT="now"
 NETWORK_DEADLINE_HOURS=6
+MAX_HOURS=5
 while [ $# -gt 0 ]; do
   case "$1" in
     --start-at) START_AT="$2"; shift 2 ;;
     --network-deadline-hours) NETWORK_DEADLINE_HOURS="$2"; shift 2 ;;
+    --max-hours) MAX_HOURS="$2"; shift 2 ;;
     *) echo "unknown option: $1"; exit 2 ;;
   esac
 done
@@ -44,17 +49,28 @@ if [ "$START_AT" != "now" ]; then
   while [ "$(date +%s)" -lt "$target" ]; do sleep 30; done
 fi
 echo "started $(date)" | tee "$RUN/started.txt"
+HARD_DEADLINE=$(awk -v h="$MAX_HOURS" -v now="$(date +%s)" 'BEGIN{printf "%d", now + h*3600}')
+echo "hard time limit: $(date -d "@$HARD_DEADLINE") (${MAX_HOURS}h)" | tee -a "$RUN/started.txt"
 
 n=0
 step() {
   local name="$1"; shift
   n=$((n + 1))
   local log; log=$(printf "%s/%02d_%s.log" "$LOGS" "$n" "$name")
+  local remaining=$((HARD_DEADLINE - $(date +%s)))
+  if [ "$remaining" -le 0 ]; then
+    printf "%02d\t%s\tSKIPPED\t0s\ttime limit of %sh reached\n" "$n" "$name" "$MAX_HOURS" >> "$SUMMARY"
+    echo "skipped $name: time limit reached"
+    return 1
+  fi
   local t0=$SECONDS
   echo "[$(date +%H:%M:%S)] $name"
-  "$@" > "$log" 2>&1
+  timeout -k 30 "$remaining" "$@" > "$log" 2>&1
   local code=$?
-  printf "%02d\t%s\t%s\t%ss\t%s\n" "$n" "$name" "$([ $code -eq 0 ] && echo PASS || echo "FAIL($code)")" "$((SECONDS - t0))" "$log" >> "$SUMMARY"
+  local result="FAIL($code)"
+  [ $code -eq 0 ] && result=PASS
+  [ $code -eq 124 ] && result="TIMEOUT(${MAX_HOURS}h limit)"
+  printf "%02d\t%s\t%s\t%ss\t%s\n" "$n" "$name" "$result" "$((SECONDS - t0))" "$log" >> "$SUMMARY"
   return $code
 }
 
@@ -68,6 +84,7 @@ network_busy() { pgrep -f -i "caliper|run-benchmark" > /dev/null 2>&1; }
 
 wait_for_idle_network() {
   local deadline=$(( $(date +%s) + NETWORK_DEADLINE_HOURS * 3600 )) quiet=0
+  [ "$deadline" -gt "$HARD_DEADLINE" ] && deadline=$HARD_DEADLINE
   while [ "$(date +%s)" -lt "$deadline" ]; do
     if network_busy; then quiet=0; else quiet=$((quiet + 1)); fi
     [ "$quiet" -ge 3 ] && return 0

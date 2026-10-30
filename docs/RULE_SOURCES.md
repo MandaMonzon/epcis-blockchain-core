@@ -9,7 +9,7 @@ Status: **Sourced** = the number comes from a cited source. **Mapped** = the sco
 | MandatoryFieldsRule (`MISSING_FIELD`) | A | rejects | required field missing | EPCIS 2.0 / GS1 schema | Sourced |
 | LogisticsDiversionRule `BLOCKED_DISPOSITION` / `BLOCKED_STATUS` | B | 85 | recalled/expired/damaged product moves | FDA 21 CFR §7.41 Class I | Mapped |
 | LogisticsDiversionRule `INVALID_SEQUENCE` | B | 60 | shipped without commissioning | EU 2016/161 Art. 36; FDA Class II | Mapped |
-| LogisticsDiversionRule `CROSS_JURISDICTION` | B | 75 | cross-jurisdiction at an unauthorized bizStep | DSCSA 21 USC §360eee (suspect product) | Mapped. The comment says "Class II" (60), but the value is 75 |
+| LogisticsDiversionRule `CROSS_JURISDICTION` | B | 75 | cross-jurisdiction at an unauthorized bizStep | DSCSA 21 USC §360eee (suspect product) | Parameter. 75 sits between Class II (60) and Class I (85); no source fixes it |
 | LogisticsDiversionRule `OUT_OF_ORDER` | B | 30 | timestamp earlier than the previous event | FDA Class III | Mapped |
 | LifecycleSequenceRule (`SKIPPED_LIFECYCLE_STEP`) | B | 75 | lifecycle step skipped | none | Parameter |
 | TransitDiversionRule (`TRANSIT_DIVERSION`) | B | 85 | received at a location other than the declared destination | DSCSA; EU FMD Art. 35; FDA Class I | Mapped |
@@ -26,4 +26,3 @@ Status: **Sourced** = the number comes from a cited source. **Mapped** = the sco
 - The 90% SLA is a rate per drug, not a score.
 - The score is the MAX over the Class B rules that fire.
 - Items marked **no source** must be reported as limitations. They must not be tuned until more transactions pass.
-- Open inconsistency: `CROSS_JURISDICTION` is documented as FDA Class II (60) but set to 75.

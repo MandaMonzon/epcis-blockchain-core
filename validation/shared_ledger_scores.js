@@ -60,7 +60,7 @@ function readLabels() {
     for (const v of result.violations || []) if ((v.score || 0) >= threshold) (codes.get(tx) || codes.set(tx, new Set()).get(tx)).add(v.code || v.type || v.rule);
   }
 
-  const last = Math.max(...entries.map(({ event }) => new Date(event.eventTime).getTime()));
+  const last = entries.reduce((max, { event }) => Math.max(max, new Date(event.eventTime).getTime()), -Infinity);
   const pending = await Shipment.auditPendingShipments(ctx, new Date(last + AUDIT_DELAY_DAYS * 86400000));
   for (const { txnId } of pending) score.set(txnId, Math.max(score.get(txnId) || 0, threshold));
 

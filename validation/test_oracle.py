@@ -133,11 +133,23 @@ class OracleTests(unittest.TestCase):
 
     def advice(self, with_recadv):
         events = [ev("shipping", 0, ("u1",), EU_A, US_A,
-                     bizTransactionList=[{"type": "urn:epcglobal:cbv:btt:desadv", "bizTransaction": "g1"}])]
+                     bizTransactionList=[{"type": "desadv", "bizTransaction": "g1"}])]
         if with_recadv:
             events.append(ev("receiving", 5, ("u1",), EU_B, US_A,
-                             bizTransactionList=[{"type": "urn:epcglobal:cbv:btt:recadv", "bizTransaction": "g1"}]))
+                             bizTransactionList=[{"type": "recadv", "bizTransaction": "g1"}]))
         return events
+
+    def test_urn_bizTransaction_types_still_recognised(self):
+        events = [ev("shipping", 0, ("u1",), EU_A, US_A,
+                     bizTransactionList=[{"type": "urn:epcglobal:cbv:btt:desadv", "bizTransaction": "g1"}])]
+        self.assertTrue(run(events)["flagged"])
+
+    def test_lot_read_from_arcos_extension_field(self):
+        events = self.advice(False)
+        for e in events:
+            e.pop("ilmd")
+            e["arcos:transactionID"] = "T1"
+        self.assertTrue(run(events)["flagged"])
 
     def test_divergence_positive(self):
         tx = run(self.advice(False))

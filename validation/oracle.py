@@ -65,7 +65,7 @@ def load_events(path):
 
 def transaction_id(event):
     ilmd = event.get("ilmd") or {}
-    value = ilmd.get("cbvmda:transactionID")
+    value = ilmd.get("cbvmda:transactionID") or event.get("arcos:transactionID")
     if value is not None:
         return str(value)
     for entry in event.get("bizTransactionList") or []:

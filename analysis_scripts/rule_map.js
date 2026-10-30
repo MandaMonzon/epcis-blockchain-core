@@ -23,7 +23,7 @@ const labels = new Map(rows.map(r => { const c = r.split(','); return [c[iId].tr
 const events = JSON.parse(fs.readFileSync(path.join(dir, 'events.json'))).epcisBody.eventList;
 const byTx = new Map();
 for (const e of events) {
-  const tx = String((e.ilmd || {})['cbvmda:transactionID'] || '').trim();
+  const tx = String((e.ilmd || {})['cbvmda:transactionID'] || e['arcos:transactionID'] || '').trim();
   if (labels.has(tx)) (byTx.get(tx) || byTx.set(tx, []).get(tx)).push(e);
 }
 

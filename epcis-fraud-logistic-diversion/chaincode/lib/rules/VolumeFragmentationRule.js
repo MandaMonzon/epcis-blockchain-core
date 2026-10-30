@@ -26,6 +26,7 @@ const { ErrorCode, BizStep } = require('../../constants/EpcisConstants');
 const { FRAGMENTATION_ELEVATED, FRAGMENTATION_HIGH } = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig = require('../../constants/RuleThresholdsConfig');
 const HistoryStore = require('../util/HistoryStore');
+const { extractLotId } = require('../util/LotIdentifier');
 const { locationId } = require('../util/locationId');
 
 const WINDOW_DAYS  = RuleThresholdsConfig.VOLUME_FRAGMENTATION_WINDOW_DAYS;
@@ -112,7 +113,7 @@ class VolumeFragmentationRule extends TaxonomyRule {
 
 /** GS1 CBV: sourceList uses "source" field (not "value"). */
 function orderIdOf(event) {
-    return (event.ilmd && event.ilmd['cbvmda:lotNumber']) || event.eventID;
+    return extractLotId(event) || event.eventID;
 }
 
 function extractSourceId(src) {

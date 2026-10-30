@@ -21,7 +21,7 @@ const RuleEngine = require(path.join(chaincodeDir, 'chaincode/lib/RuleEngine'));
 const Shipment = require(path.join(chaincodeDir, 'chaincode/lib/rules/ShipmentReceiptMismatchRule'));
 const { makeCtx } = require(path.join(chaincodeDir, 'test/helpers'));
 
-const transactionOf = event => String((event.ilmd && event.ilmd['cbvmda:transactionID']) || '').trim();
+const transactionOf = event => String((event.ilmd && event.ilmd['cbvmda:transactionID']) || event['arcos:transactionID'] || '').trim();
 
 function flattenLocations(event) {
   for (const key of ['bizLocation', 'readPoint']) {

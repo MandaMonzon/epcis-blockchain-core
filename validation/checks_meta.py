@@ -100,6 +100,12 @@ def check_shuffle(events, base_scores, work, seed=11):
                   f"transactions with the same result but a different set of fired codes={len(code_only)}")
 
 
+LOT_KEYS = {
+    "cbvmda:transactionID": "cbvmda:transactionID", "arcos:transactionID": "cbvmda:transactionID",
+    "cbvmda:lotNumber": "cbvmda:lotNumber", "arcos:lotNumber": "cbvmda:lotNumber",
+}
+
+
 class Renamer:
     def __init__(self):
         self.tables = defaultdict(dict)
@@ -126,8 +132,9 @@ class Renamer:
         if isinstance(node, dict):
             out = {}
             for k, v in node.items():
-                if k in ("cbvmda:transactionID", "cbvmda:lotNumber") and isinstance(v, str):
-                    out[k] = self.pick(k, v.strip(), lambda n, k=k: f"{'TX' if 'trans' in k else 'LOT'}{n:07d}")
+                if k in LOT_KEYS and isinstance(v, str):
+                    table = LOT_KEYS[k]
+                    out[k] = self.pick(table, v.strip(), lambda n, table=table: f"{'TX' if 'trans' in table else 'LOT'}{n:07d}")
                 else:
                     out[k] = self.node(v)
             return out

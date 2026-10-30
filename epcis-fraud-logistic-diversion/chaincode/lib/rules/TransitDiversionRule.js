@@ -43,6 +43,7 @@
 
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
 const { locationId } = require('../util/locationId');
+const { extractTransactionId } = require('../util/LotIdentifier');
 const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { TRANSIT_DIVERSION }         = require('../../constants/RiskScoreConfig');
 
@@ -125,7 +126,7 @@ class TransitDiversionRule extends TaxonomyRule {
                 intendedDest,
                 shipTime:    event.eventTime || null,
                 shipFrom:    locationId(event) || null,
-                txnId:       event.ilmd?.['cbvmda:transactionID'] || null,
+                txnId:       extractTransactionId(event),
             };
             await ctx.stub.putState(key, Buffer.from(JSON.stringify(state)));
         }

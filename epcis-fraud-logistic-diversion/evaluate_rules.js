@@ -7,6 +7,7 @@ const path = require('path');
 const RuleEngine = require('./chaincode/lib/RuleEngine');
 const { makeCtx } = require('./test/helpers');
 const Shipment = require('./chaincode/lib/rules/ShipmentReceiptMismatchRule');
+const { extractTransactionId } = require('./chaincode/lib/util/LotIdentifier');
 
 const THRESHOLD = 70;
 const NEGATIVES = new Set(['none', 'recalled']);
@@ -37,7 +38,7 @@ function groupByTransaction(labels) {
   const events = JSON.parse(fs.readFileSync(path.join(dir, 'events.json'), 'utf8')).epcisBody.eventList;
   const byTx = new Map();
   for (const e of events) {
-    const tx = e.ilmd && String(e.ilmd['cbvmda:transactionID']).trim();
+    const tx = extractTransactionId(e);
     if (tx && labels.has(tx)) (byTx.get(tx) || byTx.set(tx, []).get(tx)).push(e);
   }
   return byTx;

@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from . import signatures as sig
-from .pipeline_runner import build_dataset, group_events, load_events, read_labels, sha256_of
+from .pipeline_runner import build_dataset, group_events, load_events, read_labels, sha256_of, transaction_of
 
 RANK = {"commissioning": 0, "packing": 1, "shipping": 2, "receiving": 3, "dispensing": 4}
 NORMAL_LABELS = {"none", "recalled"}
@@ -106,7 +106,7 @@ def check_accounting(raw_path, extract_result, dataset, events):
     skipped = extract_result["skipped"]
     unsampled = extract_result.get("not_in_random_sample", 0)
     reasons = sum(extract_result["skip_reasons"].values())
-    lots = len({e["ilmd"]["cbvmda:transactionID"] for e in events})
+    lots = len({transaction_of(e) for e in events})
     checks = {
         "raw rows == rows_read": raw_rows == extract_result["rows_read"],
         "rows_read == converted + skipped + not in random sample": extract_result["rows_read"] == extract_result["converted"] + skipped + unsampled,

@@ -32,10 +32,27 @@
  * @returns {string|null} trimmed lot identifier, or null if none present.
  */
 function extractLotId(event) {
-    const ilmd = event.ilmd || {};
-    const lotNumber    = (ilmd['cbvmda:lotNumber'] || '').trim();
-    const transactionId = (ilmd['cbvmda:transactionID'] || '').trim();
+    const lotNumber     = lotField(event, 'lotNumber');
+    const transactionId = lotField(event, 'transactionID');
     return lotNumber || transactionId || null;
 }
 
-module.exports = { extractLotId };
+/**
+ * Extracts the transaction identifier from an EPCIS event.
+ * @param {object} event
+ * @returns {string|null}
+ */
+function extractTransactionId(event) {
+    return lotField(event, 'transactionID') || null;
+}
+
+/**
+ * EPCIS 2.0 allows `ilmd` only on ObjectEvent with action ADD, so other events carry
+ * the same values in `arcos:`-prefixed extension fields. `ilmd` wins when present.
+ */
+function lotField(event, name) {
+    const fromIlmd = String((event.ilmd || {})['cbvmda:' + name] || '').trim();
+    return fromIlmd || String(event['arcos:' + name] || '').trim();
+}
+
+module.exports = { extractLotId, extractTransactionId };

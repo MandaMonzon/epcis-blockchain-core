@@ -74,8 +74,8 @@ def signatures(lot):
     deletes = [e for e in lot if e["type"] == "AggregationEvent" and e["action"] == "DELETE"]
     if adds and deletes and len(deletes[0]["childEPCs"]) < QUANTITY_TOLERANCE * len(adds[0]["childEPCs"]):
         found.add("quantity_mismatch")
-    types = {b["type"] for e in lot for b in e.get("bizTransactionList", [])}
-    if "urn:epcglobal:cbv:btt:desadv" in types and "urn:epcglobal:cbv:btt:recadv" not in types:
+    types = {b["type"].rsplit(":", 1)[-1] for e in lot for b in e.get("bizTransactionList", [])}
+    if "desadv" in types and "recadv" not in types:
         found.add("shipment_receipt_mismatch")
     parties = {s["source"] for e in lot if e["bizStep"] == "receiving" for s in e.get("sourceList", [])
                if s.get("type") in PARTY_TYPES}

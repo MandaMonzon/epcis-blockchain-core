@@ -35,7 +35,7 @@ with open(os.path.join(dst, 'scenario_template.csv'), 'w', newline='') as f:
 with open(os.path.join(src, 'events.json')) as f:
     doc = json.load(f)
 events = [e for e in doc['epcisBody']['eventList']
-          if str((e.get('ilmd') or {}).get('cbvmda:transactionID', '')).strip() in ids]
+          if str((e.get('ilmd') or {}).get('cbvmda:transactionID') or e.get('arcos:transactionID', '')).strip() in ids]
 doc['epcisBody']['eventList'] = events
 with open(os.path.join(dst, 'events.json'), 'w') as f:
     json.dump(doc, f)

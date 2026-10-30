@@ -18,7 +18,7 @@ const option = (name, fallback) => {
   return i >= 0 ? process.argv[i + 1] : fallback;
 };
 const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
-const transactionOf = e => String((e.ilmd && e.ilmd['cbvmda:transactionID']) || '').trim();
+const transactionOf = e => String((e.ilmd && e.ilmd['cbvmda:transactionID']) || e['arcos:transactionID'] || '').trim();
 
 function summarise(eventID, outcome) {
   const violations = (outcome.violations || []).map(v => `${v.code}:${v.score}`).sort();

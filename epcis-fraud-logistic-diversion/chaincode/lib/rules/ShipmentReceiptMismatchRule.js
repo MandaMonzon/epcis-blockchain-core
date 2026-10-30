@@ -4,7 +4,7 @@
  * Class B: a desadv TransactionEvent (shipping) with no recadv (receiving) after the transit window.
  *
  * Basis: DSCSA 21 USC 360eee-1(c)(1) treats a missing receiving confirmation as a suspect product indicator.
- * GS1 CBV 2.0 bizTransaction types: urn:epcglobal:cbv:btt:desadv and urn:epcglobal:cbv:btt:recadv.
+ * GS1 CBV 2.0 bizTransaction types: desadv and recadv (the urn:epcglobal:cbv:btt: prefix is also accepted).
  */
 
 const { TaxonomyRule, RuleResult } = require('../TaxonomyRule');
@@ -12,6 +12,7 @@ const { ErrorCode }                 = require('../../constants/EpcisConstants');
 const { SHIPMENT_RECEIPT_MISMATCH }       = require('../../constants/RiskScoreConfig');
 const RuleThresholdsConfig          = require('../../constants/RuleThresholdsConfig');
 const { extractLotId }              = require('../util/LotIdentifier');
+const { bizTransactionKind }        = require('../util/BizTransactionType');
 
 const SHIP_DIV_KEY      = 'ship_div_';
 // The 30-day deadline had no legal source; the window is configurable for sensitivity runs.
@@ -33,12 +34,12 @@ class ShipmentReceiptMismatchRule extends TaxonomyRule {
         if (event.type === 'TransactionEvent') {
             const bizTransType = extractBizTransType(event);
 
-            if (bizTransType === 'urn:epcglobal:cbv:btt:desadv') {
+            if (bizTransType === 'desadv') {
                 // Seller emitted despatch advice — save state, no violation yet
                 return RuleResult.pass(); // state saved in updateShipmentState()
             }
 
-            if (bizTransType === 'urn:epcglobal:cbv:btt:recadv') {
+            if (bizTransType === 'recadv') {
                 // Buyer confirmed receipt — mark lot as received, no violation
                 return RuleResult.pass(); // state update clears the pending flag
             }
@@ -121,11 +122,11 @@ class ShipmentReceiptMismatchRule extends TaxonomyRule {
             ? JSON.parse(stateBytes.toString())
             : { shipped: false, received: false };
 
-        if (bizTransType === 'urn:epcglobal:cbv:btt:desadv') {
+        if (bizTransType === 'desadv') {
             state.shipped     = true;
             state.shipTime    = event.eventTime || null;
             state.destination = extractDestination(event);
-        } else if (bizTransType === 'urn:epcglobal:cbv:btt:recadv') {
+        } else if (bizTransType === 'recadv') {
             state.received    = true;
             state.receiveTime = event.eventTime || null;
         }
@@ -136,7 +137,7 @@ class ShipmentReceiptMismatchRule extends TaxonomyRule {
 
 function extractBizTransType(event) {
     const list = event.bizTransactionList || [];
-    return list.length > 0 ? (list[0].type || '') : '';
+    return list.length > 0 ? bizTransactionKind(list[0].type) : '';
 }
 
 function extractDestination(event) {

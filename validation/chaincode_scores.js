@@ -20,7 +20,7 @@ const Shipment = require(path.join(rulesDir, fs.existsSync(path.join(rulesDir, '
   ? 'ShipmentReceiptMismatchRule' : 'ShipmentReceiptDivergenceRule'));
 const { makeCtx } = require(path.join(chaincodeDir, 'test/helpers'));
 
-const transactionOf = event => String((event.ilmd && event.ilmd['cbvmda:transactionID']) || '').trim();
+const transactionOf = event => String((event.ilmd && event.ilmd['cbvmda:transactionID']) || event['arcos:transactionID'] || '').trim();
 
 function groupByTransaction(events) {
   const groups = new Map();

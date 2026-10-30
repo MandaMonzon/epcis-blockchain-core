@@ -89,7 +89,8 @@ def read_labels(scenario_csv):
 
 
 def transaction_of(event):
-    return str(event.get("ilmd", {}).get("cbvmda:transactionID", "")).strip()
+    value = event.get("ilmd", {}).get("cbvmda:transactionID") or event.get("arcos:transactionID", "")
+    return str(value).strip()
 
 
 def group_events(events):

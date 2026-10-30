@@ -22,6 +22,10 @@ GEN="${GENERATOR_DIR:-$CORE/../epcis-arcos-etl-generator}"
 RAW="${RAW:-$GEN/data/raw/arcos_raw.gz}"
 FABRIC_NET="${FABRIC_NET:-$HOME/fabric-samples/test-network}"
 SAMPLE_ROWS="${SAMPLE_ROWS:-300000}"
+# Reading the full raw file in Python takes hours, so keep every THIN_EVERY-th line first (systematic sample,
+# prime step so it does not align with periodic patterns). THIN_EVERY=0 disables it.
+THIN_EVERY="${THIN_EVERY:-97}"
+THIN_FILE="${THIN_FILE:-$HOME/arcos_thin${THIN_EVERY}.gz}"
 RUN="$HOME/overnight_$(date +%Y%m%d)"
 LOGS="$RUN/logs"
 SUMMARY="$RUN/SUMMARY.tsv"
@@ -77,6 +81,14 @@ step pull_core        git -C "$CORE" pull --ff-only
 step pull_generator   git -C "$GEN" pull --ff-only
 step install_jsonschema python3 -m pip install --user -q jsonschema
 step generator_tests  bash -c "cd '$GEN' && python3 -m unittest discover -s tests -t ."
+if [ "$THIN_EVERY" -gt 0 ] && [ "$RAW" != "$THIN_FILE" ]; then
+  if [ -s "$THIN_FILE" ]; then
+    skip thin_raw "reusing $THIN_FILE"
+  else
+    step thin_raw bash -c "nice -n 10 gzip -dc < '$RAW' | nice -n 10 awk 'NR==1||NR%$THIN_EVERY==0' | nice -n 10 gzip -1 > '$THIN_FILE.tmp' && mv '$THIN_FILE.tmp' '$THIN_FILE'"
+  fi
+  [ -s "$THIN_FILE" ] && RAW="$THIN_FILE"
+fi
 step real_sample      bash -c "cd '$GEN' && $LOW python3 main.py --data '$RAW' --sample-rows $SAMPLE_ROWS --seed 1 --sample-per-drug 10 --balanced --max-units-per-lot 10 --max-mem-mb 6000 --output-dir '$RUN/real_generated'"
 
 # Layer 2 - EPCIS events

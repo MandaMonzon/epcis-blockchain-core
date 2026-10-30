@@ -7,6 +7,11 @@ On the real ARCOS use a random sample, not `--limit` (which only reads the first
 `VALIDATE_ARGS="--seeds 30 --raw <arcos.gz> --sample-rows 300000 --sample-seed 1"`. The report states the
 sample design (stratified by drug with a floor, or `--sample-design simple`), size and representativeness against the population.
 
+The full ARCOS file (about 40 GB compressed) takes hours to read in Python, so `scripts/overnight_node003.sh` first keeps
+every 97th line (`THIN_EVERY`, systematic, `0` disables it) in `~/arcos_thin97.gz` and samples from that. The sample is
+therefore drawn from a population already reduced to 1/97 of the rows: drugs with few rows lose rows and `--balanced` can
+drop some, and the inclusion weights refer to the thinned population, not to the full file.
+
 Item 19 (Fabric network vs local evaluator), on a fresh ledger:
 
     node validation/network_equivalence.js prepare <dataset dir> subset.json

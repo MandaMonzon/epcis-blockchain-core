@@ -51,6 +51,33 @@ describe('LogisticsDiversionRule — Class B', () => {
 
     });
  
+    it('does not flag a lot whose steps share one timestamp, whatever order the ledger returns them', async () => {
+
+        const epc = 'urn:epc:id:sgtin:0614141.107346.TIE001';
+
+        const T = '2024-01-01T08:00:00Z';
+
+        // eventIDs chosen so key order puts the earlier step first and the later step first, in turn
+        for (const ids of [['a', 'b', 'c'], ['c', 'b', 'a']]) {
+
+            const tieCtx = makeCtx();
+
+            ['commissioning', 'packing', 'shipping'].forEach((step, i) => {
+
+                tieCtx.stub.putState(tieCtx.stub.createCompositeKey('productState', [epc, ids[i]]),
+
+                    JSON.stringify({ lastBizStep: step, lastEventTime: T }));
+
+            });
+
+            const result = await RuleEngine.evaluate(tieCtx, makeEvent({ bizStep: 'receiving', epcList: [epc], eventTime: '2024-01-10T08:00:00Z' }));
+
+            expect(result.violations.filter(v => v.code === 'LOGISTICS_DIVERSION_SEQUENCE')).to.be.empty;
+
+        }
+
+    });
+ 
     it('rejects shipping → dispensing (not an authorized transition)', async () => {
 
         const epc = 'urn:epc:id:sgtin:0614141.107346.SEQ001';

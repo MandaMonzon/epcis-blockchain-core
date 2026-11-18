@@ -240,6 +240,26 @@ class TransactionState:
         return []
 
 
+def evaluate_transaction(tid, ordered_events):
+    state = TransactionState()
+    event_results = []
+    scores = []
+    for event in ordered_events:
+        violations = state.process(event)
+        scores.extend(v["score"] for v in violations)
+        event_results.append({"eventID": event.get("eventID"), "violations": violations})
+    audit = state.audit()
+    scores.extend(v["score"] for v in audit)
+    score = max(scores) if scores else 0
+    return {
+        "transaction_id": tid,
+        "events": event_results,
+        "audit_violations": audit,
+        "score": score,
+        "flagged": score >= DETECTION_THRESHOLD,
+    }
+
+
 def evaluate(events):
     groups = {}
     for index, event in enumerate(events):
@@ -247,23 +267,54 @@ def evaluate(events):
     transactions = []
     for tid, items in groups.items():
         items.sort(key=lambda item: (item[0], item[1]))
-        state = TransactionState()
-        event_results = []
-        scores = []
-        for _, _, event in items:
-            violations = state.process(event)
-            scores.extend(v["score"] for v in violations)
-            event_results.append({"eventID": event.get("eventID"), "violations": violations})
-        audit = state.audit()
-        scores.extend(v["score"] for v in audit)
-        score = max(scores) if scores else 0
-        transactions.append({
-            "transaction_id": tid,
-            "events": event_results,
-            "audit_violations": audit,
-            "score": score,
-            "flagged": score >= DETECTION_THRESHOLD,
-        })
+        transactions.append(evaluate_transaction(tid, [event for _, _, event in items]))
+    return {"documented_codes": DOCUMENTED_CODES, "transactions": transactions}
+
+
+# Matches whole JSON strings (so braces inside them are skipped) and the structural brackets.
+_TOKEN = re.compile(rb'"(?:[^"\\]|\\.)*"|[{}\[\]]')
+
+
+def index_events(mapped):
+    """Byte ranges of the objects at depth 4 of { epcisBody: { eventList: [ {...} ] } }, without parsing the whole file."""
+    ranges = []
+    depth = 0
+    start = None
+    for match in _TOKEN.finditer(mapped):
+        char = match.group()[0]
+        if char == 0x22:
+            continue
+        if char in (0x7B, 0x5B):
+            depth += 1
+            if depth == 4 and char == 0x7B:
+                start = match.start()
+        else:
+            if depth == 4 and start is not None:
+                ranges.append((start, match.end()))
+                start = None
+            depth -= 1
+    return ranges
+
+
+def evaluate_file(path):
+    """Same result as evaluate(load_events(path)) but keeps only (transaction, time, byte range) per event in memory."""
+    import mmap
+    with open(path, "rb") as handle:
+        with mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ) as mapped:
+            ranges = index_events(mapped)
+            if not ranges:
+                return evaluate(load_events(path))
+            groups = {}
+            for index, (start, end) in enumerate(ranges):
+                event = json.loads(mapped[start:end])
+                if "eventTime" not in event:
+                    return evaluate(load_events(path))
+                groups.setdefault(transaction_id(event), []).append((parse_time(event["eventTime"]), index, start, end))
+                del event
+            transactions = []
+            for tid, items in groups.items():
+                items.sort(key=lambda item: (item[0], item[1]))
+                transactions.append(evaluate_transaction(tid, (json.loads(mapped[start:end]) for _, _, start, end in items)))
     return {"documented_codes": DOCUMENTED_CODES, "transactions": transactions}
 
 
@@ -272,7 +323,7 @@ def main(argv=None):
     parser.add_argument("events")
     parser.add_argument("--out")
     args = parser.parse_args(argv)
-    result = evaluate(load_events(args.events))
+    result = evaluate_file(args.events)
     text = json.dumps(result)
     if args.out:
         with open(args.out, "w", encoding="utf-8") as handle:

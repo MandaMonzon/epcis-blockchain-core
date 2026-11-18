@@ -3,7 +3,7 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { readEvents } = require('./read_events');
+const { readEvents, indexEvents, readEventAt } = require('./read_events');
 
 const events = Array.from({ length: 50 }, (_, i) => ({
   type: 'ObjectEvent', eventID: `e${i}`, note: 'brace } and bracket ] and quote \\" inside', nested: { list: [{ a: i }, [1, 2]] }, unicode: 'ção ✓',
@@ -16,6 +16,9 @@ for (const [name, text] of [['compact', JSON.stringify(document)], ['pretty', JS
   for (const size of ['7', '64', '1000000']) {
     process.env.READ_EVENTS_CHUNK = size;
     assert.deepStrictEqual(readEvents(file), events, `${name} chunk=${size}`);
+    const fd = fs.openSync(file, 'r');
+    assert.deepStrictEqual(indexEvents(file).map(entry => readEventAt(fd, entry)), events, `${name} index chunk=${size}`);
+    fs.closeSync(fd);
   }
 }
 fs.writeFileSync(path.join(dir, 'empty.json'), JSON.stringify({ epcisBody: { eventList: [] } }));

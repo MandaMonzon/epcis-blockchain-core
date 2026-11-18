@@ -211,5 +211,29 @@ class OracleTests(unittest.TestCase):
         self.assertIn("SKIPPED_LIFECYCLE_STEP", codes(run(events)))
 
 
+class StreamingTest(unittest.TestCase):
+    def test_file_evaluation_matches_in_memory_evaluation(self):
+        import json
+        import os
+        import tempfile
+        events = []
+        for number, transit in enumerate((14, 40, 5)):
+            for event in lifecycle(transit=transit, units=("u%d" % number,)):
+                event["ilmd"] = {"cbvmda:transactionID": "T%d" % number, "note": 'brace } ] and quote \\" and ção'}
+                events.append(event)
+        events.reverse()
+        document = {"@context": ["x"], "type": "EPCISDocument", "epcisBody": {"eventList": events}}
+        with tempfile.TemporaryDirectory() as folder:
+            for name, indent in (("compact.json", None), ("pretty.json", 2)):
+                path = os.path.join(folder, name)
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(document, handle, indent=indent, ensure_ascii=False)
+                self.assertEqual(oracle.evaluate_file(path), oracle.evaluate(events), name)
+            bare = os.path.join(folder, "list.json")
+            with open(bare, "w", encoding="utf-8") as handle:
+                json.dump(events, handle)
+            self.assertEqual(oracle.evaluate_file(bare), oracle.evaluate(events))
+
+
 if __name__ == "__main__":
     unittest.main()

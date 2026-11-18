@@ -22,9 +22,9 @@ def sha256_of(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def extract_clean(raw_path, out_dir, limit=None, sample_rows=None, seed=0, design="stratified"):
+def extract_clean(raw_path, out_dir, limit=None, sample_rows=None, seed=0, design="stratified", min_per_stratum=10):
     clean = Path(out_dir) / "arcos_clean.csv"
-    return clean, extract(str(raw_path), str(clean), limit=limit, sample_size=sample_rows, seed=seed, design=design)
+    return clean, extract(str(raw_path), str(clean), limit=limit, sample_size=sample_rows, seed=seed, design=design, min_per_stratum=min_per_stratum)
 
 
 def build_dataset(clean_csv, out_dir, seed, sample_per_drug, cycle=None, scale=1):
@@ -58,7 +58,8 @@ def scale_quantities(src, dst, factor):
 
 
 def load_events(path):
-    return json.loads(Path(path).read_text(encoding="utf-8"))["epcisBody"]["eventList"]
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)["epcisBody"]["eventList"]
 
 
 def write_events(events, path):

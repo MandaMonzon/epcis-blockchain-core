@@ -2,9 +2,9 @@
 
 const { Contract } = require('fabric-contract-api');
 const RuleEngine = require('./RuleEngine');
-const HistoryStore = require('./util/HistoryStore');
 const { STATE_KEY_PREFIX } = require('../constants/EpcisConstants');
 const ShipmentReceiptMismatchRule = require('./rules/ShipmentReceiptMismatchRule');
+const LogisticsDiversionRule = require('./rules/LogisticsDiversionRule');
 
 const RISK_BANDS = [
     { name: 'clean', upTo: 1 },
@@ -96,7 +96,7 @@ class LogisticDiversionContract extends Contract {
     }
 
     async getProductState(ctx, epc) {
-        const state = await HistoryStore.queryLatest(ctx, 'productState', [epc], 'lastEventTime');
+        const state = await LogisticsDiversionRule.latestState(ctx, epc);
         if (!state) throw new Error(`No state found for EPC: ${epc}`);
         return JSON.stringify(state);
     }

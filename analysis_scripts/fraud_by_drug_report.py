@@ -158,19 +158,46 @@ def build_fraud_cutoff_table_by_round(filtered, cutoff_pct):
     return rows
 
 
-def compute_fraud_scale_summary(fraud_rows, label, n_drugs_scale):
+FLAG_SCORE = 90  # group's classification cut-off: riskScore >= 90 = flagged as fraud
+SLA_PCT = 90.0
+
+
+def build_sla_pass_table_by_round(filtered, sla_pct=SLA_PCT, flag_score=FLAG_SCORE):
+    """Group cut-off: a drug passes a round when at least sla_pct% of its IDs have no risk
+    (riskScore < flag_score). Which drug-level rule defines a fraudulent drug is still open with the research group."""
+    groups = defaultdict(lambda: {"total": 0, "risky": 0})
+    for r in filtered:
+        score = r.get("riskScore")
+        if score is None:
+            continue
+        g = groups[(r.get("roundIndex"), r["drug_code"])]
+        g["total"] += 1
+        g["risky"] += float(score) >= flag_score
+    rows = []
+    for (round_idx, drug), g in sorted(groups.items(), key=lambda kv: (kv[0][0] is None, kv[0][0], kv[0][1])):
+        clean_pct = 100.0 * (g["total"] - g["risky"]) / g["total"]
+        rows.append({"round": round_idx, "drug_code": drug, "total_ids": g["total"], "risky_ids": g["risky"],
+                     "clean_pct": round(clean_pct, 1), "passes": clean_pct >= sla_pct})
+    return rows
+
+
+def sla_summary(sla_rows):
+    passing = sum(r["passes"] for r in sla_rows)
+    return {"avaliaveis_sla": len(sla_rows), "aprovados_sla": passing, "reprovados_sla": len(sla_rows) - passing}
+
+
+def compute_fraud_scale_summary(fraud_rows, label, n_drugs_scale, n_events=None):
+    n_eval = len(fraud_rows)
+    not_eval = (n_drugs_scale - n_eval) if n_drugs_scale is not None else None
+    coverage = round(100.0 * n_eval / n_drugs_scale, 1) if n_drugs_scale else None
+    per_drug = round(n_events / n_drugs_scale, 1) if n_events and n_drugs_scale else None
+    base = {"label": label, "medicamentos_escala": n_drugs_scale, "n_drugs_avaliados": n_eval,
+            "n_nao_avaliados": not_eval, "cobertura_pct": coverage, "eventos_por_medicamento": per_drug}
     if not fraud_rows:
-        return {"label": label, "medicamentos_escala": n_drugs_scale, "n_drugs_avaliados": 0,
-                "fraud_pct_medio": None, "n_drugs_com_fraude": 0}
+        return {**base, "fraud_pct_medio": None, "n_drugs_com_fraude": 0}
     n_above = sum(1 for r in fraud_rows if r["n_flagged"] > 0)
-    avg = sum(r["fraud_pct"] for r in fraud_rows) / len(fraud_rows)
-    return {
-        "label": label,
-        "medicamentos_escala": n_drugs_scale,
-        "n_drugs_avaliados": len(fraud_rows),
-        "fraud_pct_medio": round(avg, 1),
-        "n_drugs_com_fraude": n_above,
-    }
+    avg = sum(r["fraud_pct"] for r in fraud_rows) / n_eval
+    return {**base, "fraud_pct_medio": round(avg, 1), "n_drugs_com_fraude": n_above}
 
 
 def write_workbook(summary_rows, per_scale_data, cutoff_pct, min_drugs_scale, output_path):
@@ -188,14 +215,18 @@ def write_workbook(summary_rows, per_scale_data, cutoff_pct, min_drugs_scale, ou
     ])
     ws0.append([])
     headers0 = ["Escala", "Medicamentos (escala)", "Medicamentos Avaliados",
-                "Fraude % Media", "Medicamentos com Fraude Detectada"]
+                "Fraude % Media", "Medicamentos com Fraude Detectada",
+                "Nao Avaliados (volume baixo)", "Cobertura %", "Eventos por Medicamento",
+                "Medicamento-rodada avaliaveis (SLA 90%)", "Aprovados (SLA 90%)", "Reprovados (SLA 90%)"]
     ws0.append(headers0)
     for cell in ws0[3]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="C0504D")
     for row in summary_rows:
         ws0.append([row["label"], row["medicamentos_escala"], row["n_drugs_avaliados"],
-                    row["fraud_pct_medio"], row["n_drugs_com_fraude"]])
+                    row["fraud_pct_medio"], row["n_drugs_com_fraude"],
+                    row["n_nao_avaliados"], row["cobertura_pct"], row["eventos_por_medicamento"],
+                    row.get("avaliaveis_sla"), row.get("aprovados_sla"), row.get("reprovados_sla")])
     for col in ws0.columns:
         max_len = max((len(str(c.value)) for c in col if c.value is not None), default=10)
         ws0.column_dimensions[col[0].column_letter].width = min(max_len + 2, 40)
@@ -204,6 +235,13 @@ def write_workbook(summary_rows, per_scale_data, cutoff_pct, min_drugs_scale, ou
         evolution_rows = data["evolution"]
         fraud_rows = data["fraud"]
         fraud_by_round = data["fraud_by_round"]
+
+        ws_sla = wb.create_sheet(f"{label} SLA"[:31])
+        ws_sla.append(["Round", "Drug Code", "Total IDs", "IDs flagged (score>=90)", "No-risk %",
+                       "Passes 90% cut-off"])
+        for r in data["sla"]:
+            ws_sla.append([r["round"], r["drug_code"], r["total_ids"], r["risky_ids"], r["clean_pct"],
+                           "yes" if r["passes"] else "no"])
 
         # --- Aba de evolucao de score (reaproveitada do relatorio original) ---
         ws1 = wb.create_sheet(f"{label} Evol"[:31])
@@ -347,11 +385,15 @@ def main():
         fraud_rows = build_fraud_cutoff_table(filtered, args.fraud_cutoff_pct)
         fraud_by_round = build_fraud_cutoff_table_by_round(filtered, args.fraud_cutoff_pct)
 
-        summary_rows.append(compute_fraud_scale_summary(fraud_rows, label, n_drugs_scale))
+        sla_rows = build_sla_pass_table_by_round(filtered)
+        summary_rows.append({**compute_fraud_scale_summary(
+            fraud_rows, label, n_drugs_scale, len(events) if hasattr(events, '__len__') else None),
+            **sla_summary(sla_rows)})
         per_scale_data[label] = {
             "evolution": evolution_rows,
             "fraud": fraud_rows,
             "fraud_by_round": fraud_by_round,
+            "sla": sla_rows,
         }
         print(f"[ok] {label}: {n_drugs_scale} medicamentos (escala), "
               f"{len(fraud_rows)} avaliados no relatorio de fraude" +

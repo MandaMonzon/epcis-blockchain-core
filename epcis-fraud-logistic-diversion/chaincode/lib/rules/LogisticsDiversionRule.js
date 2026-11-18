@@ -20,6 +20,14 @@ const {
 const { BLOCKED_DISPOSITION, BLOCKED_STATUS, INVALID_SEQUENCE, CROSS_JURISDICTION, OUT_OF_ORDER } = require('../../constants/RiskScoreConfig');
  
 const OBJECT_TYPE = 'productState';
+
+// Steps that share a timestamp (for example commissioning and packing on one day) are ordered by lifecycle position.
+const LIFECYCLE_RANK = {
+    commissioning: 0, packing: 1, shipping: 2, receiving: 3, inspecting: 4, holding: 4,
+    stocking: 5, dispensing: 6, decommissioning: 7, destroying: 7,
+};
+const rankOf = record => (LIFECYCLE_RANK[record.lastBizStep] !== undefined ? LIFECYCLE_RANK[record.lastBizStep] : -1);
+const laterInLifecycle = (a, b) => rankOf(a) - rankOf(b);
  
 class LogisticsDiversionRule extends TaxonomyRule {
 
@@ -41,7 +49,7 @@ class LogisticsDiversionRule extends TaxonomyRule {
         const failures = [];
 
         for (const epc of (event.epcList || [])) {
-            const prev = await HistoryStore.queryLatest(ctx, OBJECT_TYPE, [epc], 'lastEventTime');
+            const prev = await LogisticsDiversionRule.latestState(ctx, epc);
             event.__prevState[epc] = prev;
             if (!prev) continue;
 
@@ -76,6 +84,10 @@ class LogisticsDiversionRule extends TaxonomyRule {
         return failures.reduce((worst, f) => (f.score > worst.score ? f : worst));
     }
 
+    static async latestState(ctx, epc) {
+        return HistoryStore.queryLatest(ctx, OBJECT_TYPE, [epc], 'lastEventTime', laterInLifecycle);
+    }
+
     static async updateProductState(ctx, event) {
 
         if (!Array.isArray(event.epcList)) return;
@@ -88,7 +100,7 @@ class LogisticsDiversionRule extends TaxonomyRule {
 
                 ? cache[epc]
 
-                : await HistoryStore.queryLatest(ctx, OBJECT_TYPE, [epc], 'lastEventTime');
+                : await LogisticsDiversionRule.latestState(ctx, epc);
 
             await HistoryStore.append(ctx, OBJECT_TYPE, [epc, event.eventID], {
 

@@ -49,20 +49,17 @@ class HistoryStore {
 
     }
  
-    static async queryLatest(ctx, objectType, keyParts, timeField) {
-
+    // Records with the same timestamp come back in key order (random eventIDs), so the caller can supply
+    // tieBreak(a, b) > 0 when `a` must win a tie; without it the result of a tie depends on that order.
+    static async queryLatest(ctx, objectType, keyParts, timeField, tieBreak) {
         const records = await HistoryStore.queryAll(ctx, objectType, keyParts);
-
         if (records.length === 0) return null;
-
-        return records.reduce(
-
-            (latest, record) => (!latest || new Date(record[timeField]) > new Date(latest[timeField]) ? record : latest),
-
-            null
-
-        );
-
+        return records.reduce((latest, record) => {
+            if (!latest) return record;
+            const delta = new Date(record[timeField]) - new Date(latest[timeField]);
+            if (delta !== 0 && !isNaN(delta)) return delta > 0 ? record : latest;
+            return tieBreak && tieBreak(record, latest) > 0 ? record : latest;
+        }, null);
     }
 
 }

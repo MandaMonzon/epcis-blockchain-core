@@ -1,4 +1,5 @@
 import csv
+import functools
 import gzip
 import hashlib
 from collections import Counter, defaultdict
@@ -93,6 +94,7 @@ def check_conservation(groups, labels, scenario_csv, cap):
                   f"lots with unexpected unit count={len(wrong_units)}")
 
 
+@functools.lru_cache(maxsize=None)
 def count_raw_rows(raw_path):
     opener = gzip.open if str(raw_path).endswith(".gz") else open
     with opener(raw_path, "rt", encoding="utf-8", errors="replace") as f:

@@ -113,9 +113,11 @@ class ShipmentReceiptMismatchRule extends TaxonomyRule {
         const txnId = extractLotId(event);
         if (!txnId) return;
 
-        if (event.type !== 'TransactionEvent') return;
+        // A physical receiving ObjectEvent is also a receipt: without this a lot that arrived was audited as never received.
+        const isReceivingObject = event.type === 'ObjectEvent' && event.bizStep === 'receiving';
+        if (event.type !== 'TransactionEvent' && !isReceivingObject) return;
 
-        const bizTransType = extractBizTransType(event);
+        const bizTransType = isReceivingObject ? 'recadv' : extractBizTransType(event);
         const key          = SHIP_DIV_KEY + txnId;
         const stateBytes   = await ctx.stub.getState(key);
         const state        = (stateBytes && stateBytes.length > 0)

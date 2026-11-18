@@ -3,7 +3,7 @@
 // Usage: node shared_ledger_scores.js <dataset dir> [--order time|file] [--threshold 70] [--out result.json]
 const fs = require('fs');
 const path = require('path');
-const { readEvents } = require('./read_events');
+const { indexEvents, readEventAt } = require('./read_events');
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -43,16 +43,18 @@ function readLabels() {
 }
 
 (async () => {
-  const events = readEvents(path.join(datasetDir, 'events.json'));
-  const entries = events.map((event, arrival) => ({ event, arrival }));
+  const eventsFile = path.join(datasetDir, 'events.json');
+  const entries = indexEvents(eventsFile).map((entry, arrival) => ({ ...entry, arrival }));
   if (order === 'time') {
-    entries.sort((a, b) => new Date(a.event.eventTime) - new Date(b.event.eventTime) || a.arrival - b.arrival);
+    entries.sort((a, b) => new Date(a.eventTime) - new Date(b.eventTime) || a.arrival - b.arrival);
   }
+  const fd = fs.openSync(eventsFile, 'r');
 
   const ctx = makeCtx();
   const score = new Map();
   const codes = new Map();
-  for (const { event } of entries) {
+  for (const entry of entries) {
+    const event = readEventAt(fd, entry);
     const tx = transactionOf(event);
     const result = await RuleEngine.evaluate(ctx, flattenLocations(JSON.parse(JSON.stringify(event))));
     const highest = Math.max(0, result.riskScore || 0, ...(result.violations || []).map(v => v.score || 0));
@@ -60,7 +62,7 @@ function readLabels() {
     for (const v of result.violations || []) if ((v.score || 0) >= threshold) (codes.get(tx) || codes.set(tx, new Set()).get(tx)).add(v.code || v.type || v.rule);
   }
 
-  const last = entries.reduce((max, { event }) => Math.max(max, new Date(event.eventTime).getTime()), -Infinity);
+  const last = entries.reduce((max, { eventTime }) => Math.max(max, new Date(eventTime).getTime()), -Infinity);
   const pending = await Shipment.auditPendingShipments(ctx, new Date(last + AUDIT_DELAY_DAYS * 86400000));
   for (const { txnId } of pending) score.set(txnId, Math.max(score.get(txnId) || 0, threshold));
 

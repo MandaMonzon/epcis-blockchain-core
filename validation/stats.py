@@ -47,3 +47,11 @@ def mcnemar_exact(only_a, only_b):
 def fmt_ci(successes, n):
     low, high = wilson(successes, n)
     return f"{100 * successes / n:.1f}% [{100 * low:.1f}, {100 * high:.1f}]" if n else "n/a"
+
+
+def odds_text(value):
+    if value != value:
+        return "n/a (no discordant pairs)"
+    if value == float("inf"):
+        return "undefined (0 cases where only the old version is right)"
+    return f"{value:.3g}"

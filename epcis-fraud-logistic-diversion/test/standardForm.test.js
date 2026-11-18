@@ -48,4 +48,18 @@ describe('EPCIS 2.0 standard form', () => {
         const pending = await ShipmentReceiptMismatchRule.auditPendingShipments(ctx, new Date('2024-03-30T00:00:00Z'));
         assert.strictEqual(pending.length, 1);
     });
+
+    it('does not audit a lot as unreceived when a receiving ObjectEvent exists', async () => {
+        const ctx = makeCtx();
+        const base = { 'arcos:transactionID': 'T10' };
+        await ShipmentReceiptMismatchRule.updateShipmentState(ctx, {
+            ...base, eventID: 'e1', type: 'TransactionEvent', eventTime: '2024-01-02T00:00:00Z', bizStep: 'shipping',
+            bizTransactionList: [{ type: 'desadv', bizTransaction: 'po-10' }],
+        });
+        await ShipmentReceiptMismatchRule.updateShipmentState(ctx, {
+            ...base, eventID: 'e2', type: 'ObjectEvent', eventTime: '2024-01-10T00:00:00Z', bizStep: 'receiving',
+        });
+        const pending = await ShipmentReceiptMismatchRule.auditPendingShipments(ctx, new Date('2024-03-30T00:00:00Z'));
+        assert.strictEqual(pending.length, 0);
+    });
 });

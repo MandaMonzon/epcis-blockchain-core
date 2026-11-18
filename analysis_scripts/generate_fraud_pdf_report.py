@@ -115,9 +115,10 @@ def make_simple_pdf(wb, output_path, cutoff_pct):
                      fontsize=13, fontweight="bold")
 
         col_labels = ["Escala", "Medicamentos\n(escala)", "Medicamentos\nAvaliados",
-                      "Fraude %\nMedia", "Com Fraude\nDetectada"]
+                      "Fraude %\nMedia", "Com Fraude\nDetectada", "Cobertura\n%", "Eventos/\nmedicamento"]
         cell_rows = [[r["Escala"], r["Medicamentos (escala)"], r["Medicamentos Avaliados"],
-                      f'{r["Fraude % Media"]}%', r["Medicamentos com Fraude Detectada"]]
+                      f'{r["Fraude % Media"]}%', r["Medicamentos com Fraude Detectada"],
+                      f'{r.get("Cobertura %")}%', r.get("Eventos por Medicamento")]
                      for r in summary]
         draw_table(ax_table, col_labels, cell_rows, title="Resumo por escala")
 
@@ -167,15 +168,19 @@ def make_complete_pdf(wb, output_path, cutoff_pct):
             f"Corte de fraude: riskScore >= {int(cutoff_pct)} (evento considerado fraude).\n"
             f"Escopo: apenas escalas com mais de 50 medicamentos "
             f"(d100_e1000, d1000_e1000, d1000_e10000) - escalas menores (10/20/50 "
-            f"medicamentos) foram excluidas por instrucao da pesquisadora."
+            f"medicamentos) foram excluidas por instrucao da pesquisadora.\n\n"
+            f"Cobertura: so medicamentos com volume minimo de eventos sao avaliados; "
+            f"os demais ficam como 'nao avaliados' (nao contam como aprovados). "
+            f"Comparar escalas com poucos eventos por medicamento exige olhar a cobertura."
         )
         ax_meta.text(0, 1, meta_text, va="top", ha="left", fontsize=9, wrap=True)
 
         ax_table = fig.add_axes([0.08, 0.40, 0.84, 0.26])
         col_labels = ["Escala", "Medicamentos\n(escala)", "Medicamentos\nAvaliados",
-                      "Fraude %\nMedia", "Com Fraude\nDetectada"]
+                      "Fraude %\nMedia", "Com Fraude\nDetectada", "Cobertura\n%", "Eventos/\nmedicamento"]
         cell_rows = [[r["Escala"], r["Medicamentos (escala)"], r["Medicamentos Avaliados"],
-                      f'{r["Fraude % Media"]}%', r["Medicamentos com Fraude Detectada"]]
+                      f'{r["Fraude % Media"]}%', r["Medicamentos com Fraude Detectada"],
+                      f'{r.get("Cobertura %")}%', r.get("Eventos por Medicamento")]
                      for r in summary]
         draw_table(ax_table, col_labels, cell_rows, title="Resumo por escala", fontsize=9)
 

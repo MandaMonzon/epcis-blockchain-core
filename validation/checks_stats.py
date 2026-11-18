@@ -66,11 +66,11 @@ def compare_with_oracle(chaincode, oracle):
 
 
 def check_oracle(per_seed):
-    total = sum(len(r["chaincode"]) for r in per_seed)
+    total = sum(r["n_tx"] for r in per_seed)
     disagreements, consistent, deciding = 0, 0, 0
     only_cc, only_or = Counter(), Counter()
     for r in per_seed:
-        d, c, n, a, b = compare_with_oracle(r["chaincode"], r["oracle"])
+        d, c, n, a, b = r["oracle_cmp"]
         disagreements += len(d)
         consistent += c
         deciding += n
@@ -238,7 +238,7 @@ def check_mcnemar(per_seed, refs, work):
                             "new_only_correct": new_only, "old_only_correct": old_only,
                             "p_value": outcome["p_value"], "odds_ratio": outcome["odds_ratio"]})
         details.append(f"{ref} vs HEAD: new correct only={new_only}, old correct only={old_only}, exact McNemar p={outcome['p_value']:.3g}, "
-                       f"odds ratio={outcome['odds_ratio']:.3g}, accuracy {old_acc:.4f} -> {new_acc:.4f}")
+                       f"odds ratio={stats.odds_text(outcome['odds_ratio'])}, accuracy {old_acc:.4f} -> {new_acc:.4f}")
     return result("17", "McNemar (paired, exact) between an older rule version and HEAD", passed and bool(comparisons),
                   f"seed {first['seed']}, {len(labels)} paired transactions; " + "; ".join(details)), comparisons
 
@@ -250,7 +250,7 @@ def check_confusion_sums(per_seed, work):
     for s in per_seed:
         tp, fn, fp, tn = confusion(s["rows"])
         checked += 1
-        if tp + fn + fp + tn != len(s["labels"]):
+        if tp + fn + fp + tn != s["n_labels"]:
             problems.append(f"own matrix seed {s['seed']}")
         out = Path(work) / f"evaluator_seed_{s['seed']}.json"
         run = subprocess.run(["node", str(evaluator), str(s["dir"]), "--json", str(out)], capture_output=True, text=True)
@@ -260,8 +260,8 @@ def check_confusion_sums(per_seed, work):
         data = json.loads(out.read_text())
         checked += 1
         cells = data["tp"] + data["fn"] + data["fp"] + data["tn"]
-        if cells != len(s["labels"]) or sum(v["n"] for v in data["stats"].values()) != len(s["labels"]):
-            problems.append(f"evaluator matrix seed {s['seed']}: cells={cells} transactions={len(s['labels'])}")
+        if cells != s["n_labels"] or sum(v["n"] for v in data["stats"].values()) != s["n_labels"]:
+            problems.append(f"evaluator matrix seed {s['seed']}: cells={cells} transactions={s['n_labels']}")
         if (data["tp"], data["fn"], data["fp"], data["tn"]) != confusion(s["rows"]):
             problems.append(f"evaluator vs independent scorer differ on seed {s['seed']}")
         json_paths.append(out)

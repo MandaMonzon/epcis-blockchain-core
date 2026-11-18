@@ -42,15 +42,23 @@ def aggregate(item, name, results):
 def build_seed(seed, clean_csv, work, sample_per_drug):
     out = Path(work) / f"seed_{seed}"
     dataset = build_dataset(clean_csv, out, seed, sample_per_drug)
-    events = load_events(dataset["events"])
     labels = read_labels(dataset["scenario"])
     chaincode = score_with_chaincode(dataset["events"], out / "chaincode_scores.json")
     oracle = score_with_oracle(dataset["events"], out / "oracle_scores.json")
+    events = load_events(dataset["events"])
     rows = st.classify(labels, chaincode)
     per_drug = per_drug_sla.per_drug_table(rows, per_drug_sla.read_drugs(dataset["scenario"]))
     per_drug_sla.write_tsv(per_drug, out / "per_drug_sla.tsv")
     return {"seed": seed, "dir": out, "dataset": dataset, "events_path": dataset["events"], "events": events,
             "labels": labels, "chaincode": chaincode, "oracle": oracle, "rows": rows, "per_drug": per_drug}
+
+
+def release_seed(s):
+    """Keep only summaries of a finished seed; seed 1 keeps full scores (mutation, McNemar and network checks read them)."""
+    s["oracle_cmp"] = st.compare_with_oracle(s["chaincode"], s["oracle"])
+    s["n_tx"], s["n_labels"] = len(s["chaincode"]), len(s["labels"])
+    if s["seed"] > 1:
+        s["chaincode"] = s["oracle"] = s["labels"] = None
 
 
 def network_equivalence(per_seed, work, network_results):
@@ -105,7 +113,7 @@ def write_report(path, header, results, rows, matrix, ppv_table, prevalence_runs
     p, rc, f1 = stats.precision_recall_f1(tp, fp, fn)
     lines += ["", f"Pooled over all seeds: TP={tp} FN={fn} FP={fp} TN={tn} (sum {tp + fn + fp + tn} = {len(pooled_rows)} transactions). "
               f"Recall {stats.fmt_ci(tp, tp + fn)}; FPR {stats.fmt_ci(fp, fp + tn)}; precision {stats.fmt_ci(tp, tp + fp)}; F1 {f1:.4f}. "
-              "The dataset prevalence is about 71% by construction (10 of 14 cycle positions), `recalled` lots are normal.", ""]
+              "The dataset prevalence is about 30% by construction (10 of 33 cycle positions, the 30% declared in the July design), `recalled` lots are normal.", ""]
     lines += ["## Drugs passing the 90% cut-off, per round", "",
               "A drug passes a round when at least 90% of its anomalous transactions are flagged (score >= 70). Each seed is one round. "
               "`Wilson lower >= 90%` is the stricter reading: the 95% interval of the drug's detection rate stays above the cut-off. "
@@ -127,7 +135,7 @@ def write_report(path, header, results, rows, matrix, ppv_table, prevalence_runs
               "| Older version | Paired lots | Accuracy old → HEAD | HEAD right only | Old right only | McNemar exact p | Odds ratio |", "|---|---|---|---|---|---|---|"]
     for c in mcnemar:
         lines.append(f"| `{c['ref']}` | {c['n']} | {c['old_acc']:.4f} → {c['new_acc']:.4f} | {c['new_only_correct']} | "
-                     f"{c['old_only_correct']} | {c['p_value']:.3g} | {c['odds_ratio']:.3g} |")
+                     f"{c['old_only_correct']} | {c['p_value']:.3g} | {stats.odds_text(c['odds_ratio'])} |")
     lines += ["", "Effect size: odds ratio of the discordant pairs (HEAD right only / old right only). Lots of one seed are paired; "
               "lots across seeds share raw rows, so only seed 1 is used.", "",
               "## Mutation matrix (item 7)", "", "Codes fired on 20 normal lots per mutation (chaincode, one mutation per lot):", ""]
@@ -143,7 +151,7 @@ def write_report(path, header, results, rows, matrix, ppv_table, prevalence_runs
 
 LIMITATIONS = [
     "The data is synthetic: anomalies are injected by the generator from ARCOS rows. Perfect recall measures agreement between "
-    "generator and rules, not detection of real fraud. Prevalence of about 71% is an artefact of the cycle.",
+    "generator and rules, not detection of real fraud. Prevalence of about 30% is the declared fault-injection rate, not a real fraud rate.",
     "Rules, generator and docs were developed on one ARCOS sample, so seeds 1-30 are not an independent hold-out; "
     "the seed changes the anomaly assignment and sampling, not the underlying raw data.",
     "The oracle was written from the documentation but by the same project; the two share the documented interpretation. "
@@ -169,6 +177,7 @@ def main():
     parser.add_argument("--sample-seed", type=int, default=0)
     parser.add_argument("--sample-design", choices=("stratified", "simple"), default="stratified")
     parser.add_argument("--sample-per-drug", type=int, default=10)
+    parser.add_argument("--min-per-stratum", type=int, default=10, help="floor of sampled rows per drug in the stratified design; must be >= --sample-per-drug to keep drugs balanced")
     parser.add_argument("--work", default=str(ROOT / "validation" / "work"))
     parser.add_argument("--old-refs", nargs="*", default=["200fabf", "ba67b09"])
     parser.add_argument("--network-results")
@@ -184,7 +193,7 @@ def main():
         raw = work / "synthetic_raw.gz"
         injected = write_synthetic_raw(raw)
         source = f"synthetic ARCOS-like file (known defects injected: {injected})"
-    clean_csv, extract_result = extract_clean(raw, work, limit=args.limit, sample_rows=args.sample_rows, seed=args.sample_seed, design=args.sample_design)
+    clean_csv, extract_result = extract_clean(raw, work, limit=args.limit, sample_rows=args.sample_rows, seed=args.sample_seed, design=args.sample_design, min_per_stratum=args.min_per_stratum)
     if "representativeness" in extract_result:
         rep = extract_result["representativeness"]
         if extract_result["sampling_design"] == "stratified":
@@ -212,8 +221,8 @@ def main():
         per_check["4"].append(data.check_accounting(raw, extract_result, s["dataset"], s["events"]))
         per_check["6"].append(data.check_ground_truth(groups, s["labels"], ANOMALY_CYCLE, s["seed"]))
         del groups
-        if seed != 1:
-            s["events"] = None
+        s["events"] = None
+        release_seed(s)
         per_seed.append(s)
         print(f"seed {seed}/{args.seeds} done", flush=True)
 
@@ -221,6 +230,7 @@ def main():
     for item, rs in per_check.items():
         results.append(aggregate(item, rs[0]["name"], rs))
     first = per_seed[0]
+    first["events"] = load_events(first["events_path"])
     results.append(data.check_determinism(clean_csv, work, 1, args.sample_per_drug, first["dataset"]))
 
     mutation_result, matrix = meta.check_mutation_matrix(group_events(first["events"]), first["labels"], work)
@@ -230,6 +240,7 @@ def main():
     base = first["chaincode"]
     results.append(meta.check_shuffle(first["events"], base, work))
     results.append(meta.check_rename(first["events"], base, work))
+    first["events"] = None
     results.append(meta.check_scale(clean_csv, work, 1, args.sample_per_drug, base))
     results.append(meta.check_all_normal(clean_csv, work, 1, args.sample_per_drug))
 
@@ -252,7 +263,10 @@ def main():
               f"- Input: {source}; {extract_result['rows_read']} rows read, {extract_result['converted']} usable",
               f"- Seeds: 1-{args.seeds}; sample per drug {args.sample_per_drug}",
               f"- Python {platform.python_version()}, node {subprocess.run(['node', '--version'], capture_output=True, text=True).stdout.strip()}",
-              f"- Summary: {sum(r['passed'] for r in results)} of {len(results)} criteria pass"]
+              f"- Summary: {sum(r['passed'] for r in results)} of {len(results)} criteria pass",
+              "- Caveat: labels come from the same generator that injects the anomalies, so recall measures agreement with those labels, "
+              "not real-world fraud detection; prevalence of the main dataset is fixed by the cycle design, so use the PPV table for realistic prevalences."
+              + (" Input is synthetic: results near 100% are expected by construction." if not args.raw else "")]
     write_report(args.report, header, results, rows, matrix, ppv_table, prevalence_runs, split, mcnemar, per_seed, harness)
     (work / "results.json").write_text(json.dumps(results, indent=1, default=str))
     print(f"report written to {args.report}")

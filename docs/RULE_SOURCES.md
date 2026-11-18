@@ -22,7 +22,7 @@ Status: **Sourced** = the number comes from a cited source. **Mapped** = the sco
 
 ## Notes
 
-- The flag threshold (70) and the per-drug SLA (90%) are decisions of the research team, not values from the literature.
-- The 90% SLA is a rate per drug, not a score.
+- The classification cut-off values (riskScore >= 90 flags an event as fraud in the group's reports) and the choice of more than 50 drugs per scale were defined empirically by the research team after the results of the earlier tests. They are not values from the literature and must be reported as such.
+- The 90% target (share of drugs classified as non-fraudulent) is a goal set by the team, not a rate from the literature. The drug-level rule that makes a drug fraudulent is still to be defined with the group.
 - The score is the MAX over the Class B rules that fire.
 - Items marked **no source** must be reported as limitations. They must not be tuned until more transactions pass.
